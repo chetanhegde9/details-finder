@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Details Finder</title>
+    <meta name="description" content="Find contact details of any business — phone, email, Instagram, WhatsApp.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2035;
+            --bg-card-hover: #1f2847;
+            --border-subtle: rgba(255,255,255,0.06);
+            --border-accent: rgba(251,146,60,0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-1: #fb923c;
+            --accent-2: #f97316;
+            --accent-gradient: linear-gradient(135deg, #fb923c, #f97316, #ef4444);
+            --accent-gradient-subtle: linear-gradient(135deg, rgba(251,146,60,0.15), rgba(249,115,22,0.15));
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --phone-color: #38bdf8;
+            --email-color: #a78bfa;
+            --insta-color: #e879a0;
+            --wa-color: #25d366;
+            --web-color: #fb923c;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.3);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+            --shadow-glow: 0 0 30px rgba(251,146,60,0.15);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary); color: var(--text-primary);
+            min-height: 100vh; overflow-x: hidden; line-height: 1.6;
+        }
+
+        /* BG */
+        .bg-effects { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .bg-effects .orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.35; animation: float 22s ease-in-out infinite; }
+        .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(251,146,60,0.3), transparent 70%); top: -10%; left: -5%; }
+        .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(239,68,68,0.2), transparent 70%); bottom: -10%; right: -5%; animation-delay: -8s; }
+        .orb-3 { width: 300px; height: 300px; background: radial-gradient(circle, rgba(56,189,248,0.15), transparent 70%); top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: -15s; }
+        @keyframes float { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-40px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(0.95)} }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+        /* HEADER */
+        header { padding: 44px 0 28px; text-align: center; }
+        header h1 {
+            font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; line-height: 1.15; margin-bottom: 6px;
+        }
+        .made-by {
+            font-size: 0.85rem; color: var(--text-muted); font-weight: 400;
+            margin-bottom: 4px; letter-spacing: 0.3px;
+        }
+        .made-by span { color: var(--accent-1); font-weight: 600; }
+
+        /* CARD */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg); padding: 28px;
+            box-shadow: var(--shadow-md); transition: var(--transition); margin-bottom: 20px;
+        }
+        .card:hover { border-color: var(--border-accent); }
+        .card h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+        .card h2 .icon {
+            width: 32px; height: 32px; background: var(--accent-gradient);
+            border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 1rem;
+        }
+        .card .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px; }
+
+        /* SEARCH */
+        .search-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .search-field { flex: 1; min-width: 160px; }
+        .search-field label {
+            display: block; font-size: 0.73rem; font-weight: 700;
+            color: var(--text-secondary); margin-bottom: 6px;
+            text-transform: uppercase; letter-spacing: 0.8px;
+        }
+        .search-field input, .search-field select {
+            width: 100%; padding: 12px 16px;
+            background: var(--bg-primary); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); color: var(--text-primary);
+            font-family: 'Inter', sans-serif; font-size: 0.9rem;
+            outline: none; transition: var(--transition);
+        }
+        .search-field input:focus, .search-field select:focus {
+            border-color: var(--accent-1); box-shadow: 0 0 0 3px rgba(251,146,60,0.15);
+        }
+        .search-field select option { background: var(--bg-secondary); }
+        .search-field input::placeholder { color: var(--text-muted); }
+
+        /* CUSTOM DROPDOWN */
+        .custom-dropdown { position: relative; }
+        .custom-dropdown .dd-selected {
+            width: 100%; padding: 12px 40px 12px 16px;
+            background: var(--bg-primary); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); color: var(--text-primary);
+            font-family: 'Inter', sans-serif; font-size: 0.9rem;
+            cursor: pointer; transition: var(--transition); user-select: none;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .custom-dropdown .dd-selected:hover { border-color: var(--accent-1); }
+        .custom-dropdown .dd-arrow {
+            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--text-muted); font-size: 0.7rem; pointer-events: none;
+            transition: transform 0.2s;
+        }
+        .custom-dropdown.open .dd-arrow { transform: translateY(-50%) rotate(180deg); }
+        .custom-dropdown .dd-menu {
+            display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+            background: var(--bg-card); border: 1px solid var(--border-accent);
+            border-radius: var(--radius-md); max-height: 320px; overflow-y: auto;
+            z-index: 100; box-shadow: var(--shadow-lg);
+        }
+        .custom-dropdown.open .dd-menu { display: block; }
+        .dd-search-input {
+            width: 100%; padding: 10px 14px; background: var(--bg-primary);
+            border: none; border-bottom: 1px solid var(--border-subtle);
+            color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.85rem;
+            outline: none;
+        }
+        .dd-search-input::placeholder { color: var(--text-muted); }
+        .dd-option {
+            padding: 10px 16px; cursor: pointer; font-size: 0.85rem;
+            color: var(--text-secondary); transition: var(--transition);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .dd-option:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+        .dd-option.active { color: var(--accent-1); font-weight: 600; }
+        .dd-option .dd-emoji { font-size: 1rem; width: 22px; text-align: center; }
+        .dd-section { padding: 6px 16px 4px; font-size: 0.65rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; }
+
+        /* BTNS */
+        .btn {
+            padding: 12px 24px; border: none; border-radius: var(--radius-md);
+            font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+            transition: var(--transition); white-space: nowrap;
+        }
+        .btn-primary { background: var(--accent-gradient); color: #fff; box-shadow: var(--shadow-glow); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(251,146,60,0.3); }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-secondary { background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-subtle); }
+        .btn-secondary:hover { border-color: var(--border-accent); background: var(--bg-card); }
+
+        /* STATUS */
+        .status-bar { display: none; margin: 20px 0; padding: 16px 20px; border-radius: var(--radius-md); font-size: 0.88rem; align-items: center; gap: 12px; }
+        .status-bar.loading { display: flex; background: rgba(251,146,60,0.1); border: 1px solid rgba(251,146,60,0.2); color: var(--accent-1); }
+        .status-bar.success { display: flex; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); color: var(--success); }
+        .status-bar.error { display: flex; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: var(--danger); }
+        .status-bar.info { display: flex; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); color: var(--phone-color); }
+        .spinner { width: 18px; height: 18px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* STATS */
+        .stats-row { display: none; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 20px 0; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 16px 14px; text-align: center; }
+        .stat-card .stat-value { font-size: 1.6rem; font-weight: 800; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-card .stat-label { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+
+        /* RESULTS */
+        .results-header { display: flex; justify-content: space-between; align-items: center; margin: 24px 0 14px; flex-wrap: wrap; gap: 12px; }
+        .results-header h2 { font-size: 1.2rem; font-weight: 700; }
+        .results-header .count { background: var(--accent-gradient-subtle); border: 1px solid var(--border-accent); padding: 4px 12px; border-radius: 100px; font-size: 0.78rem; font-weight: 600; color: var(--accent-1); margin-left: 10px; }
+        .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-tab { padding: 7px 16px; border-radius: 100px; background: var(--bg-card); border: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: var(--transition); }
+        .filter-tab:hover, .filter-tab.active { border-color: var(--accent-1); color: var(--accent-1); background: rgba(251,146,60,0.08); }
+
+        /* TABLE */
+        .table-wrapper { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { background: var(--bg-secondary); padding: 13px 14px; text-align: left; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border-subtle); }
+        tbody tr { border-bottom: 1px solid var(--border-subtle); transition: var(--transition); }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: var(--bg-card-hover); }
+        tbody td { padding: 12px 14px; font-size: 0.84rem; vertical-align: middle; }
+        .td-index { width: 40px; color: var(--text-muted); font-weight: 600; font-size: 0.78rem; }
+        .td-name { font-weight: 600; }
+        .td-name .name-sub { font-weight: 400; font-size: 0.74rem; color: var(--text-muted); margin-top: 2px; }
+
+        .td-phone { white-space: nowrap; }
+        .td-phone a { color: var(--phone-color); text-decoration: none; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .td-phone a:hover { text-decoration: underline; }
+        .wa-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 26px; height: 26px; border-radius: 50%;
+            background: var(--wa-color); color: #fff; font-size: 0.75rem; font-weight: 800;
+            text-decoration: none; margin-left: 6px; vertical-align: middle;
+            transition: var(--transition); flex-shrink: 0;
+        }
+        .wa-btn:hover { transform: scale(1.15); box-shadow: 0 0 12px rgba(37,211,102,0.4); }
+        .wa-btn svg { width: 14px; height: 14px; fill: #fff; }
+
+        .td-email a { color: var(--email-color); text-decoration: none; font-weight: 500; font-size: 0.82rem; word-break: break-all; }
+        .td-email a:hover { text-decoration: underline; }
+        .td-insta a { display: inline-flex; align-items: center; gap: 5px; color: var(--insta-color); text-decoration: none; font-weight: 600; font-size: 0.82rem; }
+        .td-insta a:hover { text-decoration: underline; }
+        .td-insta .insta-icon { width: 16px; height: 16px; background: linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; font-weight: 800; flex-shrink: 0; }
+        .td-web a { color: var(--web-color); text-decoration: none; font-weight: 500; font-size: 0.8rem; }
+        .td-web a:hover { text-decoration: underline; }
+        .td-empty { color: var(--text-muted); font-size: 0.78rem; }
+        .type-badge { display: inline-flex; padding: 3px 10px; border-radius: 100px; font-size: 0.68rem; font-weight: 600; text-transform: capitalize; letter-spacing: 0.3px; }
+        .type-restaurant { background: rgba(251,146,60,0.12); color: var(--accent-1); }
+        .type-cafe { background: rgba(139,92,246,0.12); color: #a78bfa; }
+        .type-bar { background: rgba(236,72,153,0.12); color: #f472b6; }
+        .type-fast_food { background: rgba(239,68,68,0.12); color: #f87171; }
+        .type-hospital { background: rgba(34,197,94,0.12); color: #4ade80; }
+        .type-pharmacy { background: rgba(34,197,94,0.12); color: #86efac; }
+        .type-school { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+        .type-gym { background: rgba(249,115,22,0.12); color: #fdba74; }
+        .type-hotel { background: rgba(168,85,247,0.12); color: #c084fc; }
+        .type-shop { background: rgba(251,191,36,0.12); color: #fcd34d; }
+        .type-other { background: rgba(100,116,139,0.12); color: var(--text-muted); }
+
+        /* EMPTY */
+        .empty-state { text-align: center; padding: 80px 20px; }
+        .empty-state .empty-icon { font-size: 3.5rem; margin-bottom: 16px; opacity: 0.6; }
+        .empty-state h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 8px; }
+        .empty-state p { color: var(--text-muted); font-size: 0.9rem; max-width: 420px; margin: 0 auto; }
+
+        /* FOOTER */
+        footer { text-align: center; padding: 40px 0 30px; color: var(--text-muted); font-size: 0.78rem; }
+        footer span { color: var(--accent-1); font-weight: 600; }
+
+        /* FLOATING SEARCH */
+        .fab-search {
+            position: fixed; bottom: 90px; right: 24px; z-index: 999;
+            width: 52px; height: 52px; border-radius: 50%;
+            background: var(--accent-gradient); color: #fff; border: none;
+            font-size: 1.2rem; cursor: pointer;
+            box-shadow: 0 4px 20px rgba(251,146,60,0.4);
+            display: none; align-items: center; justify-content: center;
+            transition: var(--transition);
+        }
+        .fab-search:hover { transform: scale(1.1); box-shadow: 0 6px 30px rgba(251,146,60,0.5); }
+        .fab-search svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2.5; }
+
+        /* FLOATING SEARCH PANEL */
+        .fab-panel {
+            position: fixed; bottom: 150px; right: 24px; z-index: 1000;
+            width: 360px; max-width: calc(100vw - 48px);
+            background: var(--bg-card); border: 1px solid var(--border-accent);
+            border-radius: var(--radius-lg); padding: 20px;
+            box-shadow: var(--shadow-lg);
+            display: none; flex-direction: column; gap: 12px;
+            animation: fabSlide 0.3s ease;
+        }
+        .fab-panel.open { display: flex; }
+        @keyframes fabSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .fab-panel .fab-title { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; }
+        .fab-panel .fab-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 0; line-height: 1; }
+        .fab-panel .fab-close:hover { color: var(--text-primary); }
+        .fab-panel input {
+            padding: 10px 14px; background: var(--bg-primary); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm); color: var(--text-primary);
+            font-family: 'Inter', sans-serif; font-size: 0.85rem; outline: none;
+        }
+        .fab-panel input:focus { border-color: var(--accent-1); }
+        .fab-panel input::placeholder { color: var(--text-muted); }
+        .fab-panel .btn { padding: 10px 20px; font-size: 0.85rem; width: 100%; justify-content: center; }
+
+        /* SCROLL TOP */
+        .scroll-top {
+            position: fixed; bottom: 24px; right: 24px; z-index: 999;
+            width: 46px; height: 46px; border-radius: 50%;
+            background: var(--bg-card); border: 1px solid var(--border-subtle);
+            color: var(--text-secondary); font-size: 1.1rem; cursor: pointer;
+            display: none; align-items: center; justify-content: center;
+            transition: var(--transition); box-shadow: var(--shadow-md);
+        }
+        .scroll-top:hover { border-color: var(--accent-1); color: var(--accent-1); transform: translateY(-2px); }
+        .scroll-top svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .search-row { flex-direction: column; }
+            .results-header { flex-direction: column; align-items: flex-start; }
+            .table-wrapper { overflow-x: auto; }
+            table { min-width: 780px; }
+            .fab-panel { right: 12px; bottom: 140px; width: calc(100vw - 24px); }
+            .fab-search { right: 16px; bottom: 80px; }
+            .scroll-top { right: 16px; bottom: 16px; }
+        }
+
+        .fade-in { animation: fadeIn 0.5s ease forwards; opacity: 0; }
+        @keyframes fadeIn { to { opacity: 1; } }
+        tbody tr { animation: slideIn 0.3s ease forwards; opacity: 0; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="bg-effects">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<div class="container">
+    <header>
+        <h1>Details Finder</h1>
+        <p class="made-by">Made by <span>Chetan Hegde</span></p>
+    </header>
+
+    <!-- SEARCH CARD -->
+    <section class="card" id="searchSection">
+        <h2><span class="icon">🔍</span> Search</h2>
+        <p class="subtitle">Enter a location and category to find business contact details</p>
+        <div class="search-row">
+            <div class="search-field" style="flex:2;">
+                <label>Location</label>
+                <input type="text" id="areaInput" value="" placeholder="e.g., Delhi, Mumbai, Bangalore, New York...">
+            </div>
+            <div class="search-field" style="flex:1.5;">
+                <label>Category</label>
+                <div class="custom-dropdown" id="categoryDropdown">
+                    <div class="dd-selected" onclick="toggleDropdown()">
+                        <span id="ddSelectedText">🍽️ Restaurants & Cafes</span>
+                        <span class="dd-arrow">▼</span>
+                    </div>
+                    <div class="dd-menu" id="ddMenu">
+                        <input type="text" class="dd-search-input" id="ddSearch" placeholder="Type to search category..." oninput="filterDropdown(this.value)">
+                        <div id="ddOptions"></div>
+                    </div>
+                </div>
+                <input type="hidden" id="categoryValue" value="restaurant|cafe">
+            </div>
+            <div class="search-field" style="flex:0; align-self:flex-end;">
+                <button class="btn btn-primary" id="searchBtn" onclick="startSearch()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Search
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <div class="status-bar" id="statusBar"><div class="spinner"></div><span id="statusText">Searching...</span></div>
+
+    <div class="stats-row" id="statsRow">
+        <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Total</div></div>
+        <div class="stat-card"><div class="stat-value" id="statWithPhone">0</div><div class="stat-label">📞 Phone</div></div>
+        <div class="stat-card"><div class="stat-value" id="statWithEmail">0</div><div class="stat-label">📧 Email</div></div>
+        <div class="stat-card"><div class="stat-value" id="statWithInsta">0</div><div class="stat-label">📸 Insta</div></div>
+        <div class="stat-card"><div class="stat-value" id="statWithWeb">0</div><div class="stat-label">🌐 Web</div></div>
+    </div>
+
+    <div id="resultsArea" style="display:none;" class="fade-in">
+        <div class="results-header">
+            <h2>Results <span class="count" id="resultCount">0</span></h2>
+            <div class="results-actions">
+                <button class="btn btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
+                <button class="btn btn-secondary" onclick="copyToClipboard()">📋 Copy All</button>
+            </div>
+        </div>
+        <div class="filter-tabs">
+            <span class="filter-tab active" onclick="filterResults(this,'all')">All</span>
+            <span class="filter-tab" onclick="filterResults(this,'phone')">📞 Phone</span>
+            <span class="filter-tab" onclick="filterResults(this,'email')">📧 Email</span>
+            <span class="filter-tab" onclick="filterResults(this,'instagram')">📸 Instagram</span>
+            <span class="filter-tab" onclick="filterResults(this,'whatsapp')">💬 WhatsApp</span>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead><tr>
+                    <th>#</th><th>Name</th><th>Phone / WhatsApp</th><th>Email</th><th>Instagram</th><th>Type</th><th>Website</th>
+                </tr></thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="emptyState" class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h3>Search Any Business</h3>
+        <p>Enter a location and choose a category to find contact details like phone, email, Instagram &amp; WhatsApp.</p>
+    </div>
+
+    <footer>Made with ❤️ by <span>Chetan Hegde</span></footer>
+</div>
+
+<!-- FLOATING SEARCH -->
+<button class="fab-search" id="fabSearch" onclick="toggleFabPanel()">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+</button>
+<div class="fab-panel" id="fabPanel">
+    <div class="fab-title">Quick Search <button class="fab-close" onclick="toggleFabPanel()">✕</button></div>
+    <input type="text" id="fabArea" placeholder="Location (e.g., Delhi, Mumbai...)">
+    <input type="text" id="fabCategory" placeholder="Category (e.g., restaurant, hotel...)">
+    <button class="btn btn-primary" onclick="fabSearch()">Search</button>
+</div>
+
+<!-- SCROLL TOP -->
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+    <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<script>
+// ===== CATEGORIES =====
+var CATEGORIES = [
+    { section: 'Food & Drinks' },
+    { value: 'restaurant|cafe', label: 'Restaurants & Cafes', emoji: '🍽️' },
+    { value: 'restaurant', label: 'Restaurants', emoji: '🍛' },
+    { value: 'cafe', label: 'Cafes & Coffee Shops', emoji: '☕' },
+    { value: 'fast_food', label: 'Fast Food', emoji: '🍔' },
+    { value: 'bar|pub', label: 'Bars & Pubs', emoji: '🍺' },
+    { value: 'ice_cream', label: 'Ice Cream Parlours', emoji: '🍦' },
+    { value: 'bakery', label: 'Bakeries', emoji: '🥐' },
+    { section: 'Health & Wellness' },
+    { value: 'hospital|clinic', label: 'Hospitals & Clinics', emoji: '🏥' },
+    { value: 'pharmacy', label: 'Pharmacies', emoji: '💊' },
+    { value: 'dentist', label: 'Dentists', emoji: '🦷' },
+    { value: 'doctors', label: 'Doctors', emoji: '👨‍⚕️' },
+    { value: 'veterinary', label: 'Veterinary / Pet Clinics', emoji: '🐾' },
+    { section: 'Fitness & Beauty' },
+    { value: 'gym|fitness_centre', label: 'Gyms & Fitness', emoji: '🏋️' },
+    { value: 'beauty|hairdresser', label: 'Salons & Beauty Parlours', emoji: '💇' },
+    { value: 'spa|massage', label: 'Spa & Massage', emoji: '💆' },
+    { section: 'Education' },
+    { value: 'school', label: 'Schools', emoji: '🏫' },
+    { value: 'college|university', label: 'Colleges & Universities', emoji: '🎓' },
+    { value: 'library', label: 'Libraries', emoji: '📚' },
+    { value: 'training', label: 'Training Centres', emoji: '📝' },
+    { section: 'Shopping' },
+    { value: 'supermarket', label: 'Supermarkets', emoji: '🛒' },
+    { value: 'clothes|boutique', label: 'Clothing & Boutiques', emoji: '👗' },
+    { value: 'electronics', label: 'Electronics Shops', emoji: '📱' },
+    { value: 'furniture', label: 'Furniture Stores', emoji: '🛋️' },
+    { value: 'jewelry|jewellery', label: 'Jewellery Shops', emoji: '💍' },
+    { value: 'car_repair|car', label: 'Car Dealers & Repairs', emoji: '🚗' },
+    { section: 'Stay & Travel' },
+    { value: 'hotel|guest_house|hostel', label: 'Hotels & Guest Houses', emoji: '🏨' },
+    { value: 'travel_agency', label: 'Travel Agencies', emoji: '✈️' },
+    { value: 'car_rental', label: 'Car Rentals', emoji: '🚙' },
+    { section: 'Services' },
+    { value: 'bank', label: 'Banks', emoji: '🏦' },
+    { value: 'atm', label: 'ATMs', emoji: '💳' },
+    { value: 'post_office', label: 'Post Offices', emoji: '📮' },
+    { value: 'laundry|dry_cleaning', label: 'Laundry & Dry Cleaning', emoji: '👔' },
+    { value: 'lawyer|notary', label: 'Lawyers & Notary', emoji: '⚖️' },
+    { value: 'real_estate', label: 'Real Estate Agents', emoji: '🏠' },
+    { section: 'Entertainment' },
+    { value: 'cinema', label: 'Cinemas & Theatres', emoji: '🎬' },
+    { value: 'nightclub', label: 'Nightclubs', emoji: '🎶' },
+    { value: 'amusement_arcade|theme_park', label: 'Amusement & Gaming', emoji: '🎮' },
+    { section: 'Other' },
+    { value: 'place_of_worship', label: 'Places of Worship', emoji: '🕌' },
+    { value: 'fuel', label: 'Petrol / Gas Stations', emoji: '⛽' },
+    { value: 'police', label: 'Police Stations', emoji: '🚔' },
+    { value: 'fire_station', label: 'Fire Stations', emoji: '🚒' },
+];
+
+var selectedCategory = { value: 'restaurant|cafe', label: 'Restaurants & Cafes', emoji: '🍽️' };
+
+function buildDropdownOptions(filter) {
+    var container = document.getElementById('ddOptions');
+    container.innerHTML = '';
+    var fl = (filter || '').toLowerCase();
+
+    CATEGORIES.forEach(function(cat) {
+        if (cat.section) {
+            if (!fl) {
+                var sec = document.createElement('div');
+                sec.className = 'dd-section';
+                sec.textContent = cat.section;
+                container.appendChild(sec);
+            }
+            return;
+        }
+        if (fl && cat.label.toLowerCase().indexOf(fl) === -1) return;
+
+        var opt = document.createElement('div');
+        opt.className = 'dd-option' + (cat.value === selectedCategory.value ? ' active' : '');
+        opt.innerHTML = '<span class="dd-emoji">' + cat.emoji + '</span>' + cat.label;
+        opt.onclick = function() { selectCategory(cat); };
+        container.appendChild(opt);
+    });
+}
+
+function selectCategory(cat) {
+    selectedCategory = cat;
+    document.getElementById('ddSelectedText').textContent = cat.emoji + ' ' + cat.label;
+    document.getElementById('categoryValue').value = cat.value;
+    document.getElementById('categoryDropdown').classList.remove('open');
+    buildDropdownOptions('');
+}
+
+function toggleDropdown() {
+    var dd = document.getElementById('categoryDropdown');
+    dd.classList.toggle('open');
+    if (dd.classList.contains('open')) {
+        document.getElementById('ddSearch').value = '';
+        document.getElementById('ddSearch').focus();
+        buildDropdownOptions('');
+    }
+}
+
+function filterDropdown(val) { buildDropdownOptions(val); }
+
+// Close dropdown on outside click
+document.addEventListener('click', function(e) {
+    var dd = document.getElementById('categoryDropdown');
+    if (!dd.contains(e.target)) dd.classList.remove('open');
+});
+
+// Init dropdown
+buildDropdownOptions('');
+
+// ===== STATE =====
+var allResults = [];
+
+// ===== XHR =====
+function xhrFetch(url, options) {
+    options = options || {};
+    return new Promise(function(resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open(options.method || 'GET', url, true);
+        if (options.headers) { for (var k in options.headers) xhr.setRequestHeader(k, options.headers[k]); }
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                resolve({ ok: true, json: function() { return Promise.resolve(JSON.parse(xhr.responseText)); } });
+            } else { resolve({ ok: false, status: xhr.status }); }
+        };
+        xhr.onerror = function() { reject(new Error('Network failed. Check internet connection.')); };
+        xhr.timeout = 90000;
+        xhr.ontimeout = function() { reject(new Error('Timed out. Try a smaller area.')); };
+        xhr.send(options.body || null);
+    });
+}
+
+// ===== GEOCODE =====
+async function geocodeArea(name) {
+    var res = await xhrFetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(name) + '&limit=1');
+    var data = await res.json();
+    if (!data.length) throw new Error('Location not found: "' + name + '"');
+    var p = data[0];
+    if (p.boundingbox) return { type:'bbox', s:+p.boundingbox[0], n:+p.boundingbox[1], w:+p.boundingbox[2], e:+p.boundingbox[3] };
+    return { type:'center', lat:+p.lat, lon:+p.lon };
+}
+
+// ===== OVERPASS =====
+function buildQuery(geo, catValue) {
+    var types = catValue.split('|');
+    var area = geo.type === 'bbox'
+        ? '(' + geo.s + ',' + geo.w + ',' + geo.n + ',' + geo.e + ')'
+        : '(around:10000,' + geo.lat + ',' + geo.lon + ')';
+
+    var q = '';
+    // Map categories to proper OSM tags
+    var shopTypes = ['supermarket','clothes','boutique','electronics','furniture','jewelry','jewellery','car','car_repair'];
+    var amenityTypes = ['restaurant','cafe','fast_food','bar','pub','ice_cream','bakery','hospital','clinic','pharmacy',
+        'dentist','doctors','veterinary','school','college','university','library','training','bank','atm',
+        'post_office','cinema','nightclub','fuel','police','fire_station','place_of_worship','car_rental',
+        'travel_agency','laundry','dry_cleaning','lawyer','notary','gym','fitness_centre','beauty','hairdresser',
+        'spa','massage','real_estate'];
+    var leisureTypes = ['gym','fitness_centre','spa','massage','amusement_arcade','theme_park'];
+    var tourismTypes = ['hotel','guest_house','hostel'];
+
+    for (var i = 0; i < types.length; i++) {
+        var t = types[i].trim();
+        // Try all relevant tag keys
+        q += 'node["amenity"="' + t + '"]' + area + ';';
+        q += 'way["amenity"="' + t + '"]' + area + ';';
+        if (shopTypes.indexOf(t) !== -1) {
+            q += 'node["shop"="' + t + '"]' + area + ';';
+            q += 'way["shop"="' + t + '"]' + area + ';';
+        }
+        if (leisureTypes.indexOf(t) !== -1) {
+            q += 'node["leisure"="' + t + '"]' + area + ';';
+            q += 'way["leisure"="' + t + '"]' + area + ';';
+        }
+        if (tourismTypes.indexOf(t) !== -1) {
+            q += 'node["tourism"="' + t + '"]' + area + ';';
+            q += 'way["tourism"="' + t + '"]' + area + ';';
+        }
+    }
+    return '[out:json][timeout:60];(' + q + ');out body center 500;';
+}
+
+var ENDPOINTS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter'
+];
+
+async function queryOverpass(query) {
+    var err = null;
+    for (var i = 0; i < ENDPOINTS.length; i++) {
+        try {
+            showStatus('loading', 'Querying server ' + (i+1) + '...');
+            var res = await xhrFetch(ENDPOINTS[i], { method:'POST', body:'data=' + encodeURIComponent(query), headers:{'Content-Type':'application/x-www-form-urlencoded'} });
+            if (res.ok) return await res.json();
+            err = new Error('Server error');
+        } catch(e) { err = e; }
+    }
+    throw err || new Error('All servers failed.');
+}
+
+// ===== EXTRACT =====
+function extractInstagram(tags) {
+    var raw = tags['contact:instagram'] || tags['instagram'] || '';
+    if (raw) {
+        raw = raw.trim();
+        // Must be a valid Instagram URL or handle, not just any URL
+        if (raw.indexOf('instagram.com') !== -1) {
+            var m = raw.match(/instagram\.com\/([a-zA-Z0-9_.]{1,30})/);
+            return m ? m[1] : '';
+        }
+        // Just a handle (no http, not a random URL)
+        if (raw.indexOf('http') === -1 && raw.indexOf('.') === -1) {
+            return raw.replace(/^@/, '');
+        }
+        if (raw.match(/^@?[a-zA-Z0-9_.]{1,30}$/)) {
+            return raw.replace(/^@/, '');
+        }
+        return '';
+    }
+    // Check if website is instagram
+    var website = tags.website || tags['contact:website'] || '';
+    if (website && website.indexOf('instagram.com/') !== -1) {
+        var m2 = website.match(/instagram\.com\/([a-zA-Z0-9_.]{1,30})/);
+        return m2 ? m2[1] : '';
+    }
+    return '';
+}
+
+function extractEmail(tags) { return tags.email || tags['contact:email'] || ''; }
+
+function cleanPhone(raw) {
+    if (!raw) return '';
+    return raw.split(/[;,]/).map(function(p) { return p.trim(); }).filter(Boolean).join(', ');
+}
+
+function phoneToWhatsApp(phone) {
+    if (!phone) return '';
+    var first = phone.split(',')[0].trim();
+    // Remove everything except digits and leading +
+    var digits = first.replace(/[^\d+]/g, '');
+    if (!digits) return '';
+    // Remove leading + for wa.me link
+    digits = digits.replace(/^\+/, '');
+    return digits;
+}
+
+// ===== SEARCH =====
+async function startSearch() {
+    var area = document.getElementById('areaInput').value.trim();
+    var catVal = document.getElementById('categoryValue').value;
+
+    if (!area) { showStatus('error', 'Please enter a location.'); return; }
+
+    allResults = [];
+    document.getElementById('resultsBody').innerHTML = '';
+    document.getElementById('resultsArea').style.display = 'none';
+    document.getElementById('statsRow').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('searchBtn').disabled = true;
+    document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelector('.filter-tab').classList.add('active');
+
+    try {
+        showStatus('loading', 'Locating "' + area + '"...');
+        var geo = await geocodeArea(area);
+
+        showStatus('loading', 'Searching... (may take 10-30 seconds)');
+        var query = buildQuery(geo, catVal);
+        var data = await queryOverpass(query);
+
+        if (!data.elements || !data.elements.length) {
+            showStatus('info', 'No results found. Try a broader location or different category.');
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('searchBtn').disabled = false;
+            return;
+        }
+
+        showStatus('loading', 'Processing ' + data.elements.length + ' places...');
+
+        // DEDUP: use name + coordinates (rounded to ~100m)
+        var seen = {};
+        for (var i = 0; i < data.elements.length; i++) {
+            var el = data.elements[i];
+            var tags = el.tags || {};
+            var name = tags.name || tags['name:en'] || '';
+            if (!name) continue;
+
+            var lat = el.lat || (el.center && el.center.lat) || 0;
+            var lon = el.lon || (el.center && el.center.lon) || 0;
+            // Dedup key: lowercase name + rounded coordinates (3 decimal = ~100m)
+            var dedupKey = name.toLowerCase().replace(/\s+/g, '') + '_' + lat.toFixed(3) + '_' + lon.toFixed(3);
+            if (seen[dedupKey]) continue;
+            seen[dedupKey] = true;
+
+            var phone = cleanPhone(tags.phone || tags['contact:phone'] || tags['phone:mobile'] || tags['contact:mobile'] || '');
+            var email = extractEmail(tags);
+            var instagram = extractInstagram(tags);
+            var website = tags.website || tags['contact:website'] || '';
+
+            // ONLY include if at least one contact detail exists
+            if (!phone && !email && !website) continue;
+
+            var entryType = tags.amenity || tags.shop || tags.tourism || tags.leisure || 'other';
+
+            allResults.push({
+                name: name,
+                phone: phone,
+                email: email,
+                instagram: instagram,
+                website: website,
+                type: entryType,
+                address: [tags['addr:housenumber'], tags['addr:street'], tags['addr:city']].filter(Boolean).join(', ')
+            });
+        }
+
+        // Sort: most contact info first
+        allResults.sort(function(a, b) {
+            var as = (a.phone?4:0) + (a.email?2:0) + (a.instagram?3:0) + (a.website?1:0);
+            var bs = (b.phone?4:0) + (b.email?2:0) + (b.instagram?3:0) + (b.website?1:0);
+            return bs !== as ? bs - as : a.name.localeCompare(b.name);
+        });
+
+        renderResults(allResults);
+        updateStats();
+
+        var wp = allResults.filter(function(r){return r.phone;}).length;
+        var we = allResults.filter(function(r){return r.email;}).length;
+        showStatus('success', 'Found ' + allResults.length + ' places — ' + wp + ' phone, ' + we + ' email.');
+
+    } catch(err) {
+        showStatus('error', err.message);
+        document.getElementById('emptyState').style.display = 'block';
+    }
+    document.getElementById('searchBtn').disabled = false;
+}
+
+// ===== RENDER =====
+function renderResults(data) {
+    var tbody = document.getElementById('resultsBody');
+    tbody.innerHTML = '';
+
+    data.forEach(function(e, i) {
+        var tr = document.createElement('tr');
+        tr.style.animationDelay = Math.min(i, 30) * 0.025 + 's';
+
+        // Phone + WhatsApp
+        var phoneHtml;
+        if (e.phone) {
+            var waNum = phoneToWhatsApp(e.phone);
+            var waBtn = waNum ? ' <a class="wa-btn" href="https://wa.me/' + waNum + '" target="_blank" rel="noopener" title="Chat on WhatsApp"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.963 7.963 0 01-4.113-1.14l-.287-.172-2.6.772.772-2.6-.172-.287A7.963 7.963 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/></svg></a>' : '';
+            phoneHtml = '<td class="td-phone"><a href="tel:' + e.phone.split(',')[0].trim() + '">' + esc(e.phone) + '</a>' + waBtn + '</td>';
+        } else {
+            phoneHtml = '<td class="td-empty">—</td>';
+        }
+
+        // Email
+        var emailHtml = e.email
+            ? '<td class="td-email"><a href="mailto:' + esc(e.email) + '">' + esc(e.email) + '</a></td>'
+            : '<td class="td-empty">—</td>';
+
+        // Instagram
+        var instaHtml = e.instagram
+            ? '<td class="td-insta"><a href="https://instagram.com/' + encodeURIComponent(e.instagram) + '" target="_blank"><span class="insta-icon">IG</span> @' + esc(e.instagram) + '</a></td>'
+            : '<td class="td-empty">—</td>';
+
+        // Type
+        var tc = ['restaurant','cafe','bar','pub','fast_food','hospital','clinic','pharmacy','school','gym','fitness_centre','hotel','guest_house','hostel'].indexOf(e.type) !== -1 ? e.type : 'other';
+        if (tc === 'pub') tc = 'bar';
+        if (tc === 'clinic') tc = 'hospital';
+        if (tc === 'fitness_centre') tc = 'gym';
+        if (tc === 'guest_house' || tc === 'hostel') tc = 'hotel';
+
+        // Website
+        var webHtml;
+        if (e.website) {
+            var su = e.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+            if (su.length > 25) su = su.substring(0, 25) + '...';
+            webHtml = '<td class="td-web"><a href="' + esc(e.website) + '" target="_blank">' + esc(su) + ' ↗</a></td>';
+        } else {
+            webHtml = '<td class="td-empty">—</td>';
+        }
+
+        tr.innerHTML =
+            '<td class="td-index">' + (i+1) + '</td>' +
+            '<td class="td-name">' + esc(e.name) + (e.address ? '<div class="name-sub">📍 ' + esc(e.address) + '</div>' : '') + '</td>' +
+            phoneHtml + emailHtml + instaHtml +
+            '<td><span class="type-badge type-' + tc + '">' + e.type.replace(/_/g,' ') + '</span></td>' +
+            webHtml;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('resultsArea').style.display = data.length ? 'block' : 'none';
+    document.getElementById('resultCount').textContent = data.length;
+    document.getElementById('emptyState').style.display = data.length ? 'none' : 'block';
+}
+
+function updateStats() {
+    document.getElementById('statsRow').style.display = 'grid';
+    document.getElementById('statTotal').textContent = allResults.length;
+    document.getElementById('statWithPhone').textContent = allResults.filter(function(r){return r.phone;}).length;
+    document.getElementById('statWithEmail').textContent = allResults.filter(function(r){return r.email;}).length;
+    document.getElementById('statWithInsta').textContent = allResults.filter(function(r){return r.instagram;}).length;
+    document.getElementById('statWithWeb').textContent = allResults.filter(function(r){return r.website;}).length;
+}
+
+function filterResults(tab, filter) {
+    document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+    tab.classList.add('active');
+    var f = allResults;
+    if (filter === 'phone') f = allResults.filter(function(r){return r.phone;});
+    else if (filter === 'email') f = allResults.filter(function(r){return r.email;});
+    else if (filter === 'instagram') f = allResults.filter(function(r){return r.instagram;});
+    else if (filter === 'whatsapp') f = allResults.filter(function(r){return r.phone && phoneToWhatsApp(r.phone);});
+    renderResults(f);
+}
+
+// ===== CSV =====
+function exportCSV() {
+    if (!allResults.length) return;
+    var h = ['#','Name','Phone','WhatsApp Link','Email','Instagram','Type','Website','Address'];
+    var rows = allResults.map(function(r,i) {
+        var waNum = phoneToWhatsApp(r.phone);
+        return [i+1, '"'+(r.name||'').replace(/"/g,'""')+'"', '"'+(r.phone||'')+'"',
+            waNum ? '"https://wa.me/'+waNum+'"' : '""',
+            '"'+(r.email||'')+'"', '"'+(r.instagram?'@'+r.instagram:'')+'"',
+            r.type||'', '"'+(r.website||'')+'"', '"'+(r.address||'').replace(/"/g,'""')+'"'];
+    });
+    var csv = '\uFEFF' + h.join(',') + '\n' + rows.map(function(r){return r.join(',');}).join('\n');
+    var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'details_finder_' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showStatus('success', 'Exported ' + allResults.length + ' results.');
+}
+
+function copyToClipboard() {
+    if (!allResults.length) return;
+    var lines = allResults.map(function(r,i) {
+        var p = [(i+1)+'. '+r.name];
+        if (r.phone) p.push('📞 '+r.phone);
+        if (r.email) p.push('📧 '+r.email);
+        if (r.instagram) p.push('📸 @'+r.instagram);
+        if (r.website) p.push('🌐 '+r.website);
+        return p.join(' | ');
+    });
+    var ta = document.createElement('textarea');
+    ta.value = lines.join('\n');
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showStatus('success','Copied!'); } catch(e) { showStatus('error','Copy failed.'); }
+    document.body.removeChild(ta);
+}
+
+// ===== FLOATING SEARCH =====
+var fabOpen = false;
+function toggleFabPanel() {
+    fabOpen = !fabOpen;
+    document.getElementById('fabPanel').classList.toggle('open', fabOpen);
+}
+function fabSearch() {
+    var a = document.getElementById('fabArea').value.trim();
+    var c = document.getElementById('fabCategory').value.trim();
+    if (a) document.getElementById('areaInput').value = a;
+    if (c) {
+        // Try to match a known category
+        var found = false;
+        CATEGORIES.forEach(function(cat) {
+            if (!cat.section && cat.label.toLowerCase().indexOf(c.toLowerCase()) !== -1) {
+                selectCategory(cat);
+                found = true;
+            }
+        });
+        if (!found) {
+            // Use as raw amenity type
+            document.getElementById('categoryValue').value = c.toLowerCase().replace(/\s+/g, '_');
+            document.getElementById('ddSelectedText').textContent = '🔍 ' + c;
+        }
+    }
+    toggleFabPanel();
+    window.scrollTo({top:0,behavior:'smooth'});
+    startSearch();
+}
+
+// ===== SCROLL LISTENERS =====
+window.addEventListener('scroll', function() {
+    var scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    var fab = document.getElementById('fabSearch');
+    var stt = document.getElementById('scrollTop');
+
+    if (scrollY > 400) {
+        fab.style.display = 'flex';
+        stt.style.display = 'flex';
+    } else {
+        fab.style.display = 'none';
+        stt.style.display = 'none';
+        if (fabOpen) toggleFabPanel();
+    }
+});
+
+// ===== HELPERS =====
+function showStatus(type, msg) {
+    var bar = document.getElementById('statusBar');
+    bar.className = 'status-bar ' + type;
+    document.getElementById('statusText').textContent = msg;
+    if (type !== 'loading') setTimeout(function() { bar.className = 'status-bar'; }, 8000);
+}
+
+function esc(str) {
+    if (!str) return '';
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+document.getElementById('areaInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') startSearch(); });
+</script>
+</body>
+</html>
