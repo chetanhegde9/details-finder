@@ -243,6 +243,75 @@
         footer { text-align: center; padding: 40px 0 30px; color: var(--text-muted); font-size: 0.78rem; }
         footer span { color: var(--accent-1); font-weight: 600; }
 
+        /* ===== CAMPAIGN SECTION ===== */
+        .campaign-card { border-color: rgba(37,211,102,0.2); }
+        .campaign-card:hover { border-color: rgba(37,211,102,0.4); }
+        .msg-counters { display: flex; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+        .msg-counter {
+            flex: 1; min-width: 160px; display: flex; align-items: center; gap: 14px;
+            background: var(--bg-primary); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); padding: 14px 18px;
+        }
+        .mc-icon { font-size: 1.8rem; }
+        .mc-val { font-size: 1.6rem; font-weight: 800; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1.2; }
+        .mc-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+        .composer-label { display: block; font-size: 0.73rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.8px; }
+        .msg-composer { margin-bottom: 16px; }
+        .msg-textarea {
+            width: 100%; min-height: 130px; padding: 14px 16px;
+            background: var(--bg-primary); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); color: var(--text-primary);
+            font-family: 'Inter', sans-serif; font-size: 0.9rem; line-height: 1.6;
+            outline: none; resize: vertical; transition: var(--transition);
+        }
+        .msg-textarea:focus { border-color: var(--wa-color); box-shadow: 0 0 0 3px rgba(37,211,102,0.12); }
+        .msg-textarea::placeholder { color: var(--text-muted); }
+        .char-count { font-size: 0.75rem; color: var(--text-muted); text-align: right; margin-top: 4px; }
+        .msg-email-subject { margin-bottom: 20px; }
+        .subject-input {
+            width: 100%; padding: 11px 16px;
+            background: var(--bg-primary); border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md); color: var(--text-primary);
+            font-family: 'Inter', sans-serif; font-size: 0.88rem;
+            outline: none; transition: var(--transition);
+        }
+        .subject-input:focus { border-color: var(--email-color); box-shadow: 0 0 0 3px rgba(167,139,250,0.12); }
+        .subject-input::placeholder { color: var(--text-muted); }
+        .campaign-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+        .btn-wa { background: linear-gradient(135deg, #25d366, #128c5e); color: #fff; box-shadow: 0 0 20px rgba(37,211,102,0.2); }
+        .btn-wa:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(37,211,102,0.35); }
+        .btn-wa:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-email { background: linear-gradient(135deg, #a78bfa, #7c3aed); color: #fff; box-shadow: 0 0 20px rgba(167,139,250,0.2); }
+        .btn-email:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(167,139,250,0.35); }
+        .btn-email:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ===== SEND MODAL ===== */
+        .send-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1100; backdrop-filter: blur(4px); }
+        .send-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 1200; width: 480px; max-width: calc(100vw - 32px);
+            background: var(--bg-card); border: 1px solid var(--border-accent);
+            border-radius: var(--radius-xl); padding: 28px;
+            box-shadow: var(--shadow-lg); animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn { from { opacity:0; transform:translate(-50%,-48%) scale(0.96); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+        .send-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .send-modal-title { font-size: 1.1rem; font-weight: 700; }
+        .send-modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 0; transition: var(--transition); }
+        .send-modal-close:hover { color: var(--text-primary); }
+        .send-progress-bar { width: 100%; height: 6px; background: var(--bg-primary); border-radius: 100px; margin-bottom: 14px; overflow: hidden; }
+        .send-progress-fill { height: 100%; background: var(--accent-gradient); border-radius: 100px; transition: width 0.4s ease; width: 0%; }
+        .send-status-text { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 16px; }
+        .send-preview {
+            background: var(--bg-primary); border-radius: var(--radius-md);
+            padding: 14px 16px; margin-bottom: 20px;
+            font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;
+            max-height: 130px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+            border: 1px solid var(--border-subtle);
+        }
+        .send-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-bottom: 14px; }
+        .send-note { font-size: 0.75rem; color: var(--text-muted); background: rgba(251,146,60,0.07); border-radius: var(--radius-sm); padding: 8px 12px; }
+
         /* FLOATING SEARCH */
         .fab-search {
             position: fixed; bottom: 90px; right: 24px; z-index: 999;
@@ -396,7 +465,74 @@
         <p>Enter a location and choose a category to find contact details like phone, email, Instagram &amp; WhatsApp.</p>
     </div>
 
+    <!-- MESSAGE CAMPAIGN SECTION -->
+    <div id="campaignSection" style="display:none;" class="fade-in">
+        <div class="card campaign-card">
+            <h2><span class="icon">📤</span> Message Campaign</h2>
+            <p class="subtitle">Type your message below and send it to all contacts via WhatsApp or Email</p>
+
+            <div class="msg-counters">
+                <div class="msg-counter">
+                    <span class="mc-icon wa">💬</span>
+                    <div>
+                        <div class="mc-val" id="mcPhoneCount">0</div>
+                        <div class="mc-label">WhatsApp Numbers</div>
+                    </div>
+                </div>
+                <div class="msg-counter">
+                    <span class="mc-icon em">📧</span>
+                    <div>
+                        <div class="mc-val" id="mcEmailCount">0</div>
+                        <div class="mc-label">Email Addresses</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="msg-composer">
+                <label class="composer-label">Your Message</label>
+                <textarea id="msgText" class="msg-textarea" placeholder="Type your message here...
+Example:
+Hi! We are offering a special discount this week. Interested? Reply YES to know more!"></textarea>
+                <div class="char-count"><span id="charCount">0</span> characters</div>
+            </div>
+
+            <div class="msg-email-subject" id="emailSubjectRow">
+                <label class="composer-label">Email Subject <span style="color:var(--text-muted);font-weight:400">(for email sending only)</span></label>
+                <input type="text" id="emailSubject" class="subject-input" placeholder="e.g., Special Offer Just for You!">
+            </div>
+
+            <div class="campaign-btns">
+                <button class="btn btn-wa" onclick="sendAllWhatsApp()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.963 7.963 0 01-4.113-1.14l-.287-.172-2.6.772.772-2.6-.172-.287A7.963 7.963 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/></svg>
+                    Send via WhatsApp
+                </button>
+                <button class="btn btn-email" onclick="sendAllEmail()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    Send via Email
+                </button>
+            </div>
+        </div>
+    </div>
+
     <footer>Made with ❤️ by <span>Chetan Hegde</span></footer>
+</div>
+
+<!-- SEND MODAL -->
+<div class="send-modal-overlay" id="sendModalOverlay" onclick="closeSendModal()" style="display:none;"></div>
+<div class="send-modal" id="sendModal" style="display:none;">
+    <div class="send-modal-header">
+        <div class="send-modal-title" id="sendModalTitle">Sending via WhatsApp</div>
+        <button class="send-modal-close" onclick="closeSendModal()">✕</button>
+    </div>
+    <div class="send-progress-bar"><div class="send-progress-fill" id="sendProgressFill"></div></div>
+    <div class="send-status-text" id="sendStatusText">Opening 1 of 10...</div>
+    <div class="send-preview" id="sendPreview"></div>
+    <div class="send-modal-actions">
+        <button class="btn btn-secondary" onclick="skipCurrent()">Skip ⏭</button>
+        <button class="btn btn-primary" id="nextBtn" onclick="sendNext()">Open Next ➜</button>
+        <button class="btn btn-secondary" id="doneBtn" onclick="closeSendModal()" style="display:none;">Done ✓</button>
+    </div>
+    <div class="send-note">💡 Each message opens in a new tab. Make sure popups are allowed for this site.</div>
 </div>
 
 <!-- FLOATING SEARCH -->
@@ -739,6 +875,7 @@ async function startSearch() {
 
         renderResults(allResults);
         updateStats();
+        showCampaignSection();
 
         var wp = allResults.filter(function(r){return r.phone;}).length;
         var we = allResults.filter(function(r){return r.email;}).length;
@@ -933,6 +1070,118 @@ function esc(str) {
 }
 
 document.getElementById('areaInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') startSearch(); });
+
+// ===== CHARACTER COUNT =====
+document.getElementById('msgText').addEventListener('input', function() {
+    document.getElementById('charCount').textContent = this.value.length;
+});
+
+// ===== CAMPAIGN LOGIC =====
+var sendQueue = [];
+var sendIndex = 0;
+var sendMode = '';
+
+function showCampaignSection() {
+    var phones = allResults.filter(function(r) { return r.phone && phoneToWhatsApp(r.phone); });
+    var emails = allResults.filter(function(r) { return r.email; });
+    document.getElementById('mcPhoneCount').textContent = phones.length;
+    document.getElementById('mcEmailCount').textContent = emails.length;
+    document.getElementById('campaignSection').style.display = 'block';
+    setTimeout(function() {
+        document.getElementById('campaignSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+
+function sendAllWhatsApp() {
+    var msg = document.getElementById('msgText').value.trim();
+    if (!msg) { alert('Please type a message first!'); return; }
+    sendQueue = allResults.filter(function(r) { return r.phone && phoneToWhatsApp(r.phone); });
+    if (!sendQueue.length) { alert('No WhatsApp numbers found in results.'); return; }
+    sendIndex = 0;
+    sendMode = 'whatsapp';
+    openSendModal();
+}
+
+function sendAllEmail() {
+    var msg = document.getElementById('msgText').value.trim();
+    if (!msg) { alert('Please type a message first!'); return; }
+    sendQueue = allResults.filter(function(r) { return r.email; });
+    if (!sendQueue.length) { alert('No email addresses found in results.'); return; }
+    sendIndex = 0;
+    sendMode = 'email';
+    openSendModal();
+}
+
+function openSendModal() {
+    document.getElementById('sendModalOverlay').style.display = 'block';
+    document.getElementById('sendModal').style.display = 'block';
+    document.getElementById('sendModalTitle').textContent = sendMode === 'whatsapp' ? '💬 Sending via WhatsApp' : '📧 Sending via Email';
+    document.getElementById('nextBtn').style.display = 'inline-flex';
+    document.getElementById('doneBtn').style.display = 'none';
+    updateSendModal();
+}
+
+function closeSendModal() {
+    document.getElementById('sendModalOverlay').style.display = 'none';
+    document.getElementById('sendModal').style.display = 'none';
+    sendQueue = [];
+    sendIndex = 0;
+}
+
+function updateSendModal() {
+    var total = sendQueue.length;
+    var current = sendQueue[sendIndex];
+    var pct = Math.round(((sendIndex) / total) * 100);
+
+    document.getElementById('sendProgressFill').style.width = pct + '%';
+    document.getElementById('sendStatusText').textContent = 'Contact ' + (sendIndex + 1) + ' of ' + total + ' — ' + (current ? current.name : '');
+
+    var msg = document.getElementById('msgText').value;
+    if (sendMode === 'whatsapp') {
+        document.getElementById('sendPreview').textContent = 'To: ' + (current ? current.phone : '') + '\n\n' + msg;
+    } else {
+        var subj = document.getElementById('emailSubject').value || '(No Subject)';
+        document.getElementById('sendPreview').textContent = 'To: ' + (current ? current.email : '') + '\nSubject: ' + subj + '\n\n' + msg;
+    }
+}
+
+function sendNext() {
+    if (sendIndex >= sendQueue.length) { finishSend(); return; }
+    var entry = sendQueue[sendIndex];
+    var msg = document.getElementById('msgText').value;
+
+    if (sendMode === 'whatsapp') {
+        var waNum = phoneToWhatsApp(entry.phone);
+        var waUrl = 'https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg);
+        window.open(waUrl, '_blank');
+    } else {
+        var subj = encodeURIComponent(document.getElementById('emailSubject').value || 'Hello');
+        var body = encodeURIComponent(msg);
+        var mailUrl = 'mailto:' + entry.email + '?subject=' + subj + '&body=' + body;
+        window.open(mailUrl, '_blank');
+    }
+
+    sendIndex++;
+    if (sendIndex >= sendQueue.length) {
+        finishSend();
+    } else {
+        updateSendModal();
+    }
+}
+
+function skipCurrent() {
+    sendIndex++;
+    if (sendIndex >= sendQueue.length) { finishSend(); return; }
+    updateSendModal();
+}
+
+function finishSend() {
+    document.getElementById('sendProgressFill').style.width = '100%';
+    document.getElementById('sendStatusText').textContent = '✅ All done! Sent to ' + sendQueue.length + ' contacts.';
+    document.getElementById('sendPreview').textContent = 'Campaign completed successfully!';
+    document.getElementById('nextBtn').style.display = 'none';
+    document.getElementById('doneBtn').style.display = 'inline-flex';
+}
 </script>
 </body>
 </html>
