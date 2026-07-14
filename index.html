@@ -1,1548 +1,1238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Details Finder</title>
-    <meta name="description" content="Find contact details of any business — phone, email, Instagram, WhatsApp.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- SheetJS for Excel parsing -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    <style>
-        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        :root{
-            --bg-primary:#0a0e1a;--bg-secondary:#111827;--bg-card:#1a2035;--bg-card-hover:#1f2847;
-            --border-subtle:rgba(255,255,255,0.06);--border-accent:rgba(251,146,60,0.3);
-            --text-primary:#f1f5f9;--text-secondary:#94a3b8;--text-muted:#64748b;
-            --accent-1:#fb923c;--accent-2:#f97316;
-            --accent-gradient:linear-gradient(135deg,#fb923c,#f97316,#ef4444);
-            --accent-subtle:linear-gradient(135deg,rgba(251,146,60,0.15),rgba(249,115,22,0.15));
-            --success:#22c55e;--warning:#f59e0b;--danger:#ef4444;
-            --phone-color:#38bdf8;--email-color:#a78bfa;--insta-color:#e879a0;
-            --wa-color:#25d366;--web-color:#fb923c;
-            --radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:24px;
-            --shadow-md:0 4px 20px rgba(0,0,0,0.3);--shadow-lg:0 8px 40px rgba(0,0,0,0.5);
-            --shadow-glow:0 0 30px rgba(251,146,60,0.15);
-            --transition:all 0.3s cubic-bezier(0.4,0,0.2,1)
-        }
-        body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden;line-height:1.6}
-
-        /* BG ORBS */
-        .bg-fx{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
-        .orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.35;animation:float 22s ease-in-out infinite}
-        .o1{width:500px;height:500px;background:radial-gradient(circle,rgba(251,146,60,.3),transparent 70%);top:-10%;left:-5%}
-        .o2{width:400px;height:400px;background:radial-gradient(circle,rgba(239,68,68,.2),transparent 70%);bottom:-10%;right:-5%;animation-delay:-8s}
-        .o3{width:300px;height:300px;background:radial-gradient(circle,rgba(56,189,248,.15),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:-15s}
-        @keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-40px) scale(1.05)}66%{transform:translate(-20px,20px) scale(.95)}}
-
-        .wrap{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
-
-        /* HEADER */
-        header{padding:44px 0 28px;text-align:center}
-        header h1{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.15;margin-bottom:6px}
-        .made-by{font-size:.85rem;color:var(--text-muted);margin-bottom:4px}
-        .made-by span{color:var(--accent-1);font-weight:600}
-
-        /* CARD */
-        .card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:28px;box-shadow:var(--shadow-md);transition:var(--transition);margin-bottom:20px}
-        .card:hover{border-color:var(--border-accent)}
-        .card h2{font-size:1.1rem;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:10px}
-        .card h2 .ico{width:32px;height:32px;background:var(--accent-gradient);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
-        .subtitle{color:var(--text-muted);font-size:.85rem;margin-bottom:16px}
-        .lbl{display:block;font-size:.73rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px}
-
-        /* INPUTS */
-        .inp{width:100%;padding:12px 16px;background:var(--bg-primary);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:.9rem;outline:none;transition:var(--transition)}
-        .inp:focus{border-color:var(--accent-1);box-shadow:0 0 0 3px rgba(251,146,60,.15)}
-        .inp::placeholder{color:var(--text-muted)}
-        .inp-sm{padding:10px 14px;font-size:.85rem}
-        select.inp option{background:var(--bg-secondary)}
-
-        /* SEARCH ROW */
-        .search-row{display:flex;gap:12px;flex-wrap:wrap}
-        .sf{flex:1;min-width:160px}
-
-        /* CUSTOM DROPDOWN */
-        .dd{position:relative}
-        .dd-sel{width:100%;padding:12px 40px 12px 16px;background:var(--bg-primary);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:.9rem;cursor:pointer;transition:var(--transition);user-select:none;display:flex;align-items:center;gap:8px}
-        .dd-sel:hover{border-color:var(--accent-1)}
-        .dd-arrow{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.7rem;pointer-events:none;transition:transform .2s}
-        .dd.open .dd-arrow{transform:translateY(-50%) rotate(180deg)}
-        .dd-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--bg-card);border:1px solid var(--border-accent);border-radius:var(--radius-md);max-height:320px;overflow-y:auto;z-index:200;box-shadow:var(--shadow-lg)}
-        .dd.open .dd-menu{display:block}
-        .dd-si{width:100%;padding:10px 14px;background:var(--bg-primary);border:none;border-bottom:1px solid var(--border-subtle);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:.85rem;outline:none}
-        .dd-si::placeholder{color:var(--text-muted)}
-        .dd-opt{padding:10px 16px;cursor:pointer;font-size:.85rem;color:var(--text-secondary);transition:var(--transition);display:flex;align-items:center;gap:8px}
-        .dd-opt:hover{background:var(--bg-card-hover);color:var(--text-primary)}
-        .dd-opt.active{color:var(--accent-1);font-weight:600}
-        .dd-sec{padding:6px 16px 4px;font-size:.65rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.2px}
-
-        /* BTNS */
-        .btn{padding:12px 24px;border:none;border-radius:var(--radius-md);font-family:'Inter',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:var(--transition);white-space:nowrap}
-        .btn-primary{background:var(--accent-gradient);color:#fff;box-shadow:var(--shadow-glow)}
-        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(251,146,60,.3)}
-        .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
-        .btn-secondary{background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border-subtle)}
-        .btn-secondary:hover{border-color:var(--border-accent)}
-        .btn-sm{padding:8px 16px;font-size:.82rem}
-        .btn-wa{background:linear-gradient(135deg,#25d366,#128c5e);color:#fff;box-shadow:0 0 20px rgba(37,211,102,.2)}
-        .btn-wa:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(37,211,102,.35)}
-        .btn-wa:disabled{opacity:.5;cursor:not-allowed;transform:none}
-        .btn-email{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;box-shadow:0 0 20px rgba(167,139,250,.2)}
-        .btn-email:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(167,139,250,.35)}
-        .btn-email:disabled{opacity:.5;cursor:not-allowed;transform:none}
-
-        /* STATUS BAR */
-        .sb{display:none;margin:20px 0;padding:16px 20px;border-radius:var(--radius-md);font-size:.88rem;align-items:center;gap:12px}
-        .sb.loading{display:flex;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.2);color:var(--accent-1)}
-        .sb.success{display:flex;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:var(--success)}
-        .sb.error{display:flex;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--danger)}
-        .sb.info{display:flex;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:var(--phone-color)}
-        .spin{width:18px;height:18px;border:2px solid transparent;border-top-color:currentColor;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
-        @keyframes spin{to{transform:rotate(360deg)}}
-
-        /* STATS */
-        .stats-row{display:none;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:12px;margin:20px 0}
-        .sc{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:16px 14px;text-align:center}
-        .sc .sv{font-size:1.6rem;font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .sc .sl{font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
-
-        /* RESULTS HEADER */
-        .rh{display:flex;justify-content:space-between;align-items:center;margin:24px 0 14px;flex-wrap:wrap;gap:12px}
-        .rh h2{font-size:1.2rem;font-weight:700}
-        .count{background:var(--accent-subtle);border:1px solid var(--border-accent);padding:4px 12px;border-radius:100px;font-size:.78rem;font-weight:600;color:var(--accent-1);margin-left:10px}
-        .ra{display:flex;gap:8px;flex-wrap:wrap}
-
-        /* FILTER TABS */
-        .ftabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-        .ftab{padding:7px 16px;border-radius:100px;background:var(--bg-card);border:1px solid var(--border-subtle);color:var(--text-secondary);font-size:.8rem;font-weight:500;cursor:pointer;transition:var(--transition)}
-        .ftab:hover,.ftab.active{border-color:var(--accent-1);color:var(--accent-1);background:rgba(251,146,60,.08)}
-
-        /* TABLE */
-        .tw{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-md)}
-        .tw-scroll{overflow-x:auto}
-        table{width:100%;border-collapse:collapse;min-width:760px}
-        thead th{background:var(--bg-secondary);padding:13px 14px;text-align:left;font-size:.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border-subtle)}
-        tbody tr{border-bottom:1px solid var(--border-subtle);transition:var(--transition);animation:slideIn .3s ease forwards;opacity:0}
-        tbody tr:last-child{border-bottom:none}
-        tbody tr:hover{background:var(--bg-card-hover)}
-        tbody td{padding:12px 14px;font-size:.84rem;vertical-align:middle}
-        @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        .ti{width:40px;color:var(--text-muted);font-weight:600;font-size:.78rem}
-        .tn{font-weight:600}
-        .tn .ns{font-weight:400;font-size:.74rem;color:var(--text-muted);margin-top:2px}
-        .tph a{color:var(--phone-color);text-decoration:none;font-weight:600;font-variant-numeric:tabular-nums}
-        .tph a:hover{text-decoration:underline}
-        .wa-btn{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--wa-color);color:#fff;text-decoration:none;margin-left:5px;vertical-align:middle;transition:var(--transition);flex-shrink:0}
-        .wa-btn:hover{transform:scale(1.15);box-shadow:0 0 10px rgba(37,211,102,.4)}
-        .wa-btn svg{width:13px;height:13px;fill:#fff}
-        .tem a{color:var(--email-color);text-decoration:none;font-weight:500;font-size:.82rem;word-break:break-all}
-        .tem a:hover{text-decoration:underline}
-        .tig a{display:inline-flex;align-items:center;gap:4px;color:var(--insta-color);text-decoration:none;font-weight:600;font-size:.82rem}
-        .tig a:hover{text-decoration:underline}
-        .ig-ico{width:15px;height:15px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);border-radius:4px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:8px;font-weight:800;flex-shrink:0}
-        .twb a{color:var(--web-color);text-decoration:none;font-weight:500;font-size:.8rem}
-        .twb a:hover{text-decoration:underline}
-        .te{color:var(--text-muted);font-size:.78rem}
-        .tb{display:inline-flex;padding:3px 10px;border-radius:100px;font-size:.68rem;font-weight:600;text-transform:capitalize;letter-spacing:.3px}
-        .t-restaurant{background:rgba(251,146,60,.12);color:var(--accent-1)}
-        .t-cafe{background:rgba(139,92,246,.12);color:#a78bfa}
-        .t-bar,.t-pub{background:rgba(236,72,153,.12);color:#f472b6}
-        .t-fast_food{background:rgba(239,68,68,.12);color:#f87171}
-        .t-hospital,.t-clinic{background:rgba(34,197,94,.12);color:#4ade80}
-        .t-hotel{background:rgba(168,85,247,.12);color:#c084fc}
-        .t-other{background:rgba(100,116,139,.12);color:var(--text-muted)}
-
-        /* SENT TICK */
-        .sent-tick{display:inline-flex;align-items:center;gap:4px;color:var(--success);font-size:.72rem;font-weight:600;background:rgba(34,197,94,.1);padding:2px 8px;border-radius:100px;margin-left:6px;white-space:nowrap}
-
-        /* EMPTY */
-        .empty{text-align:center;padding:80px 20px}
-        .empty .ei{font-size:3.5rem;margin-bottom:16px;opacity:.6}
-        .empty h3{font-size:1.2rem;font-weight:600;margin-bottom:8px}
-        .empty p{color:var(--text-muted);font-size:.9rem;max-width:420px;margin:0 auto}
-
-        /* CAMPAIGN */
-        .camp-card{border-color:rgba(37,211,102,.2)}
-        .camp-card:hover{border-color:rgba(37,211,102,.4)}
-        .mc-row{display:flex;gap:16px;margin-bottom:22px;flex-wrap:wrap}
-        .mc{flex:1;min-width:150px;display:flex;align-items:center;gap:14px;background:var(--bg-primary);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px 18px}
-        .mc-ico{font-size:1.8rem}
-        .mc-val{font-size:1.5rem;font-weight:800;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2}
-        .mc-lbl{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
-        .msg-ta{width:100%;min-height:130px;padding:14px 16px;background:var(--bg-primary);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:.9rem;line-height:1.6;outline:none;resize:vertical;transition:var(--transition)}
-        .msg-ta:focus{border-color:var(--wa-color);box-shadow:0 0 0 3px rgba(37,211,102,.12)}
-        .msg-ta::placeholder{color:var(--text-muted)}
-        .char-ct{font-size:.75rem;color:var(--text-muted);text-align:right;margin-top:4px}
-        .camp-btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
-
-        /* EMAIL SETUP */
-        .email-setup-card{border-color:rgba(167,139,250,.2);margin-bottom:0}
-        .email-setup-card:hover{border-color:rgba(167,139,250,.4)}
-        .setup-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
-        .setup-field{display:flex;flex-direction:column;gap:6px}
-        .key-row{display:flex;gap:8px}
-        .key-row .inp{flex:1}
-        .toggle-vis{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px 14px;color:var(--text-secondary);cursor:pointer;font-size:.85rem;transition:var(--transition)}
-        .toggle-vis:hover{border-color:var(--border-accent)}
-        .setup-note{font-size:.78rem;color:var(--text-muted);padding:10px 14px;background:rgba(167,139,250,.06);border-radius:var(--radius-sm);border:1px solid rgba(167,139,250,.1);margin-top:4px}
-        .setup-note a{color:var(--email-color);text-decoration:none}
-        .setup-note a:hover{text-decoration:underline}
-        .setup-saved{display:inline-flex;align-items:center;gap:6px;color:var(--success);font-size:.8rem;font-weight:600;background:rgba(34,197,94,.08);padding:6px 12px;border-radius:100px;border:1px solid rgba(34,197,94,.2)}
-
-        /* SEND LOG */
-        .log-section{margin-top:16px}
-        .log-title{font-size:.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:10px}
-        .log-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
-        .log-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-primary);border-radius:var(--radius-sm);font-size:.8rem}
-        .log-item .li-name{font-weight:600;flex:1}
-        .log-item .li-type{font-size:.72rem;padding:2px 8px;border-radius:100px}
-        .li-wa{background:rgba(37,211,102,.12);color:var(--wa-color)}
-        .li-em{background:rgba(167,139,250,.12);color:var(--email-color)}
-        .li-time{color:var(--text-muted);font-size:.72rem}
-        .li-tick{color:var(--success)}
-
-        /* MODAL */
-        .overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1100;backdrop-filter:blur(4px);display:none}
-        .modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1200;width:500px;max-width:calc(100vw - 32px);background:var(--bg-card);border:1px solid var(--border-accent);border-radius:var(--radius-xl);padding:28px;box-shadow:var(--shadow-lg);display:none;animation:mIn .3s ease}
-        @keyframes mIn{from{opacity:0;transform:translate(-50%,-48%) scale(.96)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-        .mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-        .mt{font-size:1.1rem;font-weight:700}
-        .mc-btn{background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;transition:var(--transition);padding:0;line-height:1}
-        .mc-btn:hover{color:var(--text-primary)}
-        .prog-bar{width:100%;height:6px;background:var(--bg-primary);border-radius:100px;margin-bottom:14px;overflow:hidden}
-        .prog-fill{height:100%;background:var(--accent-gradient);border-radius:100px;transition:width .4s ease;width:0%}
-        .prog-txt{font-size:.88rem;color:var(--text-secondary);margin-bottom:16px}
-        .preview-box{background:var(--bg-primary);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:20px;font-size:.84rem;color:var(--text-secondary);line-height:1.6;max-height:140px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;border:1px solid var(--border-subtle)}
-        .m-actions{display:flex;gap:10px;justify-content:flex-end;margin-bottom:14px}
-        .m-note{font-size:.75rem;color:var(--text-muted);background:rgba(251,146,60,.07);border-radius:var(--radius-sm);padding:8px 12px}
-
-        /* SEND STATUS IN TABLE */
-        .row-sending{background:rgba(251,146,60,.04)!important}
-        .row-sent{background:rgba(34,197,94,.03)!important}
-
-        /* FLOATING */
-        .fab-search{position:fixed;bottom:90px;right:24px;z-index:999;width:52px;height:52px;border-radius:50%;background:var(--accent-gradient);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(251,146,60,.4);display:none;align-items:center;justify-content:center;transition:var(--transition)}
-        .fab-search:hover{transform:scale(1.1)}
-        .fab-search svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2.5}
-        .fab-panel{position:fixed;bottom:150px;right:24px;z-index:1000;width:360px;max-width:calc(100vw - 48px);background:var(--bg-card);border:1px solid var(--border-accent);border-radius:var(--radius-lg);padding:20px;box-shadow:var(--shadow-lg);display:none;flex-direction:column;gap:12px;animation:fabSlide .3s ease}
-        .fab-panel.open{display:flex}
-        @keyframes fabSlide{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-        .fab-title{font-size:.85rem;font-weight:700;display:flex;justify-content:space-between;align-items:center}
-        .fab-x{background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer}
-        .scroll-top{position:fixed;bottom:24px;right:24px;z-index:999;width:46px;height:46px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border-subtle);color:var(--text-secondary);cursor:pointer;display:none;align-items:center;justify-content:center;transition:var(--transition);box-shadow:var(--shadow-md)}
-        .scroll-top:hover{border-color:var(--accent-1);color:var(--accent-1);transform:translateY(-2px)}
-        .scroll-top svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.5}
-
-        footer{text-align:center;padding:40px 0 30px;color:var(--text-muted);font-size:.78rem}
-        footer span{color:var(--accent-1);font-weight:600}
-        .fade-in{animation:fadeIn .5s ease forwards;opacity:0}
-        @keyframes fadeIn{to{opacity:1}}
-
-        /* NAV BAR */
-        .top-nav{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:28px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:6px;}
-        .nav-btn{flex:1;max-width:220px;padding:10px 20px;border:none;border-radius:var(--radius-md);font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:var(--transition);color:var(--text-secondary);background:transparent;display:flex;align-items:center;justify-content:center;gap:8px}
-        .nav-btn:hover{color:var(--text-primary);background:var(--bg-card-hover)}
-        .nav-btn.active{background:var(--accent-gradient);color:#fff;box-shadow:var(--shadow-glow)}
-
-        /* IMPORT PAGE */
-        .dropzone{border:2px dashed var(--border-accent);border-radius:var(--radius-lg);padding:48px 24px;text-align:center;cursor:pointer;transition:var(--transition);background:var(--bg-primary);margin-bottom:20px}
-        .dropzone:hover,.dropzone.dragover{border-color:var(--accent-1);background:rgba(251,146,60,.05)}
-        .dropzone .dz-icon{font-size:3rem;margin-bottom:12px;display:block}
-        .dropzone .dz-title{font-size:1.1rem;font-weight:700;margin-bottom:6px}
-        .dropzone .dz-sub{font-size:.82rem;color:var(--text-muted)}
-        .dz-formats{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
-        .dz-fmt{padding:4px 12px;border-radius:100px;font-size:.72rem;font-weight:600;background:rgba(251,146,60,.1);color:var(--accent-1);border:1px solid rgba(251,146,60,.2)}
-        .imp-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
-        .imp-toolbar .it-left{display:flex;align-items:center;gap:10px;flex:1}
-        .imp-toolbar .it-right{display:flex;gap:8px;flex-wrap:wrap}
-        .sel-count{font-size:.82rem;color:var(--text-secondary);font-weight:500}
-        .sel-count span{color:var(--accent-1);font-weight:700}
-        /* Import table */
-        .imp-tw{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-md);margin-bottom:20px}
-        .imp-tw-scroll{overflow-x:auto}
-        .imp-table{width:100%;border-collapse:collapse;min-width:600px}
-        .imp-table thead th{background:var(--bg-secondary);padding:12px 14px;text-align:left;font-size:.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border-subtle)}
-        .imp-table tbody tr{border-bottom:1px solid var(--border-subtle);transition:var(--transition)}
-        .imp-table tbody tr:last-child{border-bottom:none}
-        .imp-table tbody tr:hover{background:var(--bg-card-hover)}
-        .imp-table tbody tr.row-checked{background:rgba(251,146,60,.05)}
-        .imp-table tbody tr.imp-sent{background:rgba(34,197,94,.04)}
-        .imp-table tbody td{padding:11px 14px;font-size:.84rem;vertical-align:middle}
-        .cb-cell{width:40px;text-align:center}
-        .cb{width:16px;height:16px;cursor:pointer;accent-color:var(--accent-1)}
-        .imp-name{font-weight:600}
-        .imp-email{color:var(--email-color);font-size:.82rem}
-        .imp-phone{color:var(--phone-color);font-size:.82rem}
-        .imp-status{font-size:.75rem}
-        .imp-badge{display:inline-flex;padding:3px 10px;border-radius:100px;font-size:.7rem;font-weight:600}
-        .ib-pending{background:rgba(100,116,139,.12);color:var(--text-muted)}
-        .ib-sending{background:rgba(251,146,60,.12);color:var(--accent-1)}
-        .ib-sent{background:rgba(34,197,94,.12);color:var(--success)}
-        .ib-fail{background:rgba(239,68,68,.12);color:var(--danger)}
-        .imp-send-bar{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px}
-        .imp-send-bar h3{font-size:1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-        .imp-msg-area{width:100%;min-height:110px;padding:12px 14px;background:var(--bg-primary);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:.88rem;line-height:1.6;outline:none;resize:vertical;transition:var(--transition);margin-bottom:12px}
-        .imp-msg-area:focus{border-color:var(--email-color);box-shadow:0 0 0 3px rgba(167,139,250,.1)}
-        .imp-msg-area::placeholder{color:var(--text-muted)}
-        .imp-send-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-        .imp-prog-wrap{margin-top:16px;display:none}
-        .imp-prog-bar{width:100%;height:8px;background:var(--bg-primary);border-radius:100px;overflow:hidden;margin-bottom:8px}
-        .imp-prog-fill{height:100%;background:var(--accent-gradient);border-radius:100px;transition:width .3s ease;width:0%}
-        .imp-prog-txt{font-size:.82rem;color:var(--text-secondary)}
-        .imp-log{margin-top:16px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
-        .imp-log-item{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--bg-primary);border-radius:var(--radius-sm);font-size:.78rem}
-        .imp-log-item .iln{font-weight:600;flex:1}
-        .imp-log-item .ile{color:var(--email-color);font-size:.72rem}
-        .imp-log-item .ilt{color:var(--text-muted);font-size:.72rem}
-        .col-map{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:14px;background:var(--bg-primary);border-radius:var(--radius-md);border:1px solid var(--border-subtle)}
-        .col-map-field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
-        .col-map-field label{font-size:.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px}
-        .col-map-sel{padding:7px 10px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:.82rem;outline:none;cursor:pointer}
-        .col-map-sel:focus{border-color:var(--accent-1)}
-
-        @media(max-width:768px){.search-row,.setup-row,.mc-row{flex-direction:column}.rh{flex-direction:column;align-items:flex-start}.fab-panel{right:12px;bottom:140px;width:calc(100vw - 24px)}.fab-search{right:16px;bottom:80px}.scroll-top{right:16px;bottom:16px}.top-nav{flex-direction:column}.nav-btn{max-width:100%;width:100%}}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Details Finder</title>
+<meta name="description" content="Find contact details of any business — phone, email, Instagram, WhatsApp.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e1a;--bg2:#111827;--card:#1a2035;--card2:#1f2847;
+  --b0:rgba(255,255,255,0.06);--b1:rgba(251,146,60,0.3);
+  --t1:#f1f5f9;--t2:#94a3b8;--t3:#64748b;
+  --a1:#fb923c;--a2:#f97316;
+  --ag:linear-gradient(135deg,#fb923c,#f97316,#ef4444);
+  --as:linear-gradient(135deg,rgba(251,146,60,0.15),rgba(249,115,22,0.15));
+  --ok:#22c55e;--warn:#f59e0b;--err:#ef4444;
+  --ph:#38bdf8;--em:#a78bfa;--ig:#e879a0;--wa:#25d366;--wb:#fb923c;
+  --r1:8px;--r2:12px;--r3:16px;--r4:24px;
+  --sh1:0 4px 20px rgba(0,0,0,0.3);--sh2:0 8px 40px rgba(0,0,0,0.5);
+  --sg:0 0 30px rgba(251,146,60,0.15);
+  --tr:all 0.3s cubic-bezier(0.4,0,0.2,1)
+}
+body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden;line-height:1.6}
+.bg-fx{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.35;animation:float 22s ease-in-out infinite}
+.o1{width:500px;height:500px;background:radial-gradient(circle,rgba(251,146,60,.3),transparent 70%);top:-10%;left:-5%}
+.o2{width:400px;height:400px;background:radial-gradient(circle,rgba(239,68,68,.2),transparent 70%);bottom:-10%;right:-5%;animation-delay:-8s}
+.o3{width:300px;height:300px;background:radial-gradient(circle,rgba(56,189,248,.15),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:-15s}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-40px) scale(1.05)}66%{transform:translate(-20px,20px) scale(.95)}}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+header{padding:40px 0 20px;text-align:center}
+header h1{font-size:clamp(2rem,5vw,3.2rem);font-weight:800;background:var(--ag);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2;margin-bottom:4px}
+.made-by{font-size:.82rem;color:var(--t3)}.made-by span{color:var(--a1);font-weight:600}
+/* NAV */
+.top-nav{display:flex;gap:8px;background:var(--card);border:1px solid var(--b0);border-radius:var(--r3);padding:6px;margin-bottom:20px}
+.nb{flex:1;padding:10px 20px;border:none;border-radius:var(--r2);font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;color:var(--t2);background:transparent;display:flex;align-items:center;justify-content:center;gap:8px;transition:var(--tr)}
+.nb:hover{color:var(--t1);background:var(--card2)}
+.nb.active{background:var(--ag);color:#fff;box-shadow:var(--sg)}
+/* DAILY BAR */
+.daily-bar{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--b0);border-radius:var(--r2);padding:12px 18px;margin-bottom:20px;flex-wrap:wrap}
+.daily-info{display:flex;align-items:center;gap:10px;flex:1;min-width:160px}
+.daily-lbl{font-size:.78rem;color:var(--t3);white-space:nowrap}
+.daily-num{font-size:.95rem;font-weight:800;color:var(--a1)}
+.daily-track{flex:2;min-width:120px}
+.dpb{width:100%;height:6px;background:var(--bg);border-radius:100px;overflow:hidden}
+.dpf{height:100%;border-radius:100px;transition:width .4s ease;background:var(--ag)}
+.daily-rem{font-size:.72rem;color:var(--t3);margin-top:3px}
+/* BATCH */
+.batch-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.batch-row label{font-size:.78rem;color:var(--t2);font-weight:600;white-space:nowrap}
+.btabs{display:flex;gap:6px;flex-wrap:wrap}
+.btab{padding:5px 14px;border-radius:100px;background:var(--bg);border:1px solid var(--b0);color:var(--t2);font-size:.78rem;font-weight:600;cursor:pointer;transition:var(--tr)}
+.btab:hover,.btab.active{border-color:var(--a1);color:var(--a1);background:rgba(251,146,60,.08)}
+.batch-note{font-size:.75rem;color:var(--t3)}
+/* CARD */
+.card{background:var(--card);border:1px solid var(--b0);border-radius:var(--r3);padding:28px;box-shadow:var(--sh1);transition:var(--tr);margin-bottom:20px}
+.card:hover{border-color:var(--b1)}
+.card h2{font-size:1.05rem;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.ico{width:32px;height:32px;background:var(--ag);border-radius:var(--r1);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.subtitle{color:var(--t3);font-size:.83rem;margin-bottom:16px}
+.lbl{display:block;font-size:.72rem;font-weight:700;color:var(--t2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px}
+/* INPUTS */
+.inp{width:100%;padding:11px 14px;background:var(--bg);border:1px solid var(--b0);border-radius:var(--r2);color:var(--t1);font-family:'Inter',sans-serif;font-size:.88rem;outline:none;transition:var(--tr)}
+.inp:focus{border-color:var(--a1);box-shadow:0 0 0 3px rgba(251,146,60,.12)}
+.inp::placeholder{color:var(--t3)}
+.inp-sm{padding:9px 12px;font-size:.84rem}
+select.inp option{background:var(--bg2)}
+/* DROPDOWN */
+.dd{position:relative}
+.dd-sel{width:100%;padding:11px 38px 11px 14px;background:var(--bg);border:1px solid var(--b0);border-radius:var(--r2);color:var(--t1);font-family:'Inter',sans-serif;font-size:.88rem;cursor:pointer;transition:var(--tr);user-select:none;display:flex;align-items:center;gap:8px}
+.dd-sel:hover{border-color:var(--a1)}
+.dd-arr{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:.7rem;pointer-events:none;transition:transform .2s}
+.dd.open .dd-arr{transform:translateY(-50%) rotate(180deg)}
+.dd-menu{display:none;position:absolute;top:calc(100% + 5px);left:0;right:0;background:var(--card);border:1px solid var(--b1);border-radius:var(--r2);max-height:300px;overflow-y:auto;z-index:300;box-shadow:var(--sh2)}
+.dd.open .dd-menu{display:block}
+.dd-si{width:100%;padding:9px 12px;background:var(--bg);border:none;border-bottom:1px solid var(--b0);color:var(--t1);font-family:'Inter',sans-serif;font-size:.84rem;outline:none}
+.dd-si::placeholder{color:var(--t3)}
+.dd-opt{padding:9px 14px;cursor:pointer;font-size:.84rem;color:var(--t2);transition:var(--tr);display:flex;align-items:center;gap:8px}
+.dd-opt:hover{background:var(--card2);color:var(--t1)}
+.dd-opt.active{color:var(--a1);font-weight:600}
+.dd-sec{padding:5px 14px 3px;font-size:.64rem;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:1.2px}
+/* BTNS */
+.btn{padding:11px 22px;border:none;border-radius:var(--r2);font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:var(--tr);white-space:nowrap}
+.bp{background:var(--ag);color:#fff;box-shadow:var(--sg)}.bp:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(251,146,60,.3)}.bp:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.bs{background:var(--bg);color:var(--t1);border:1px solid var(--b0)}.bs:hover{border-color:var(--b1)}
+.bsm{padding:8px 14px;font-size:.82rem}
+.bwa{background:linear-gradient(135deg,#25d366,#128c5e);color:#fff;box-shadow:0 0 20px rgba(37,211,102,.2)}.bwa:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(37,211,102,.35)}.bwa:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.bem{background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff;box-shadow:0 0 20px rgba(167,139,250,.2)}.bem:hover{transform:translateY(-2px);box-shadow:0 0 30px rgba(167,139,250,.35)}.bem:disabled{opacity:.5;cursor:not-allowed;transform:none}
+/* STATUS */
+.sb{display:none;margin:16px 0;padding:14px 18px;border-radius:var(--r2);font-size:.86rem;align-items:center;gap:12px}
+.sb.loading{display:flex;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.2);color:var(--a1)}
+.sb.success{display:flex;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:var(--ok)}
+.sb.error{display:flex;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--err)}
+.sb.info{display:flex;background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:var(--ph)}
+.spin{width:18px;height:18px;border:2px solid transparent;border-top-color:currentColor;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* STATS */
+.stats-row{display:none;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;margin:16px 0}
+.sc{background:var(--card);border:1px solid var(--b0);border-radius:var(--r2);padding:14px;text-align:center}
+.sv{font-size:1.5rem;font-weight:800;background:var(--ag);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sl{font-size:.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+/* SEARCH */
+.sr{display:flex;gap:12px;flex-wrap:wrap}
+.sf{flex:1;min-width:150px}
+/* FILTER TABS */
+.ftabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.ftab{padding:6px 14px;border-radius:100px;background:var(--card);border:1px solid var(--b0);color:var(--t2);font-size:.78rem;font-weight:500;cursor:pointer;transition:var(--tr)}
+.ftab:hover,.ftab.active{border-color:var(--a1);color:var(--a1);background:rgba(251,146,60,.08)}
+/* TABLE */
+.tw{background:var(--card);border:1px solid var(--b0);border-radius:var(--r3);overflow:hidden;box-shadow:var(--sh1)}
+.tws{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:700px}
+thead th{background:var(--bg2);padding:11px 12px;text-align:left;font-size:.7rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--b0)}
+tbody tr{border-bottom:1px solid var(--b0);transition:var(--tr);animation:sli .3s ease forwards;opacity:0}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--card2)}
+tbody td{padding:11px 12px;font-size:.83rem;vertical-align:middle}
+@keyframes sli{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.ti{width:36px;color:var(--t3);font-weight:600;font-size:.76rem}
+.tn{font-weight:600}.tn .ns{font-weight:400;font-size:.72rem;color:var(--t3);margin-top:2px}
+.tph a{color:var(--ph);text-decoration:none;font-weight:600}
+.tph a:hover{text-decoration:underline}
+.wa-btn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--wa);color:#fff;text-decoration:none;margin-left:4px;vertical-align:middle;transition:var(--tr);flex-shrink:0}
+.wa-btn:hover{transform:scale(1.15)}
+.wa-btn svg{width:12px;height:12px;fill:#fff}
+.tem a{color:var(--em);text-decoration:none;font-size:.8rem;word-break:break-all}
+.tem a:hover{text-decoration:underline}
+.tig a{display:inline-flex;align-items:center;gap:4px;color:var(--ig);text-decoration:none;font-size:.8rem}
+.ig-ico{width:14px;height:14px;background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:7px;font-weight:800;flex-shrink:0}
+.twb a{color:var(--wb);text-decoration:none;font-size:.78rem}
+.twb a:hover{text-decoration:underline}
+.te{color:var(--t3);font-size:.76rem}
+.tb{display:inline-flex;padding:2px 8px;border-radius:100px;font-size:.67rem;font-weight:600;text-transform:capitalize}
+.t-restaurant{background:rgba(251,146,60,.12);color:var(--a1)}
+.t-cafe{background:rgba(139,92,246,.12);color:#a78bfa}
+.t-bar,.t-pub{background:rgba(236,72,153,.12);color:#f472b6}
+.t-fast_food{background:rgba(239,68,68,.12);color:#f87171}
+.t-hospital,.t-clinic{background:rgba(34,197,94,.12);color:#4ade80}
+.t-hotel{background:rgba(168,85,247,.12);color:#c084fc}
+.t-other{background:rgba(100,116,139,.12);color:var(--t3)}
+.sent-tick{display:inline-flex;align-items:center;gap:3px;color:var(--ok);font-size:.7rem;font-weight:600;background:rgba(34,197,94,.1);padding:2px 7px;border-radius:100px;margin-left:4px;white-space:nowrap}
+/* EMPTY */
+.empty{text-align:center;padding:70px 20px}
+.empty .ei{font-size:3rem;margin-bottom:14px;opacity:.6}
+.empty h3{font-size:1.15rem;font-weight:600;margin-bottom:8px}
+.empty p{color:var(--t3);font-size:.88rem;max-width:400px;margin:0 auto}
+/* CAMPAIGN */
+.mc-row{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+.mc{flex:1;min-width:140px;display:flex;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--b0);border-radius:var(--r2);padding:14px 16px}
+.mc-ico{font-size:1.6rem}
+.mc-val{font-size:1.4rem;font-weight:800;background:var(--ag);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2}
+.mc-lbl{font-size:.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+.msg-ta{width:100%;min-height:120px;padding:12px 14px;background:var(--bg);border:1px solid var(--b0);border-radius:var(--r2);color:var(--t1);font-family:'Inter',sans-serif;font-size:.88rem;line-height:1.6;outline:none;resize:vertical;transition:var(--tr)}
+.msg-ta:focus{border-color:var(--wa);box-shadow:0 0 0 3px rgba(37,211,102,.1)}
+.msg-ta::placeholder{color:var(--t3)}
+.char-ct{font-size:.73rem;color:var(--t3);text-align:right;margin-top:4px}
+.camp-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+/* EMAIL SETUP */
+.setup-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:14px}
+.setup-field{display:flex;flex-direction:column;gap:5px}
+.key-row{display:flex;gap:8px}
+.key-row .inp{flex:1}
+.tv{background:var(--card);border:1px solid var(--b0);border-radius:var(--r2);padding:9px 12px;color:var(--t2);cursor:pointer;font-size:.82rem;transition:var(--tr)}
+.tv:hover{border-color:var(--b1)}
+.setup-note{font-size:.76rem;color:var(--t3);padding:10px 14px;background:rgba(167,139,250,.06);border-radius:var(--r1);border:1px solid rgba(167,139,250,.1);margin-top:10px}
+.setup-note a{color:var(--em);text-decoration:none}.setup-note a:hover{text-decoration:underline}
+.setup-saved{display:inline-flex;align-items:center;gap:6px;color:var(--ok);font-size:.78rem;font-weight:600;background:rgba(34,197,94,.08);padding:5px 12px;border-radius:100px;border:1px solid rgba(34,197,94,.2)}
+/* TEST BOX */
+.test-box{background:var(--bg);border:1px solid var(--b0);border-radius:var(--r2);padding:14px;margin-bottom:12px}
+.test-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.test-row .inp{flex:1;min-width:180px}
+/* SEND LOG */
+.log-section{margin-top:14px}
+.log-title{font-size:.83rem;font-weight:600;color:var(--t2);margin-bottom:8px}
+.log-list{display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto}
+.li{padding:8px 12px;background:var(--bg);border-radius:var(--r1);font-size:.78rem}
+.li-row{display:flex;align-items:center;gap:8px}
+.li-name{font-weight:600;flex:1}
+.li-tag{font-size:.7rem;padding:2px 8px;border-radius:100px}
+.li-wa{background:rgba(37,211,102,.12);color:var(--wa)}
+.li-em{background:rgba(167,139,250,.12);color:var(--em)}
+.li-time{color:var(--t3);font-size:.7rem}
+.li-detail{font-size:.7rem;margin-top:3px;padding-left:20px}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1100;backdrop-filter:blur(4px);display:none}
+.modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1200;width:480px;max-width:calc(100vw - 32px);background:var(--card);border:1px solid var(--b1);border-radius:var(--r4);padding:26px;box-shadow:var(--sh2);display:none;animation:mIn .3s ease}
+@keyframes mIn{from{opacity:0;transform:translate(-50%,-48%) scale(.96)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.mt{font-size:1.05rem;font-weight:700}
+.mx{background:none;border:none;color:var(--t3);font-size:1.2rem;cursor:pointer;transition:var(--tr);padding:0;line-height:1}.mx:hover{color:var(--t1)}
+.prog-bar{width:100%;height:6px;background:var(--bg);border-radius:100px;margin-bottom:12px;overflow:hidden}
+.prog-fill{height:100%;background:var(--ag);border-radius:100px;transition:width .4s ease;width:0%}
+.prog-txt{font-size:.86rem;color:var(--t2);margin-bottom:14px}
+.preview-box{background:var(--bg);border-radius:var(--r2);padding:12px 14px;margin-bottom:18px;font-size:.82rem;color:var(--t2);line-height:1.6;max-height:130px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;border:1px solid var(--b0)}
+.m-actions{display:flex;gap:8px;justify-content:flex-end;margin-bottom:12px}
+.m-note{font-size:.73rem;color:var(--t3);background:rgba(251,146,60,.06);border-radius:var(--r1);padding:8px 12px}
+/* IMPORT PAGE */
+.dropzone{border:2px dashed var(--b1);border-radius:var(--r3);padding:44px 24px;text-align:center;cursor:pointer;transition:var(--tr);background:var(--bg);margin-bottom:18px}
+.dropzone:hover,.dropzone.dov{border-color:var(--a1);background:rgba(251,146,60,.05)}
+.dz-icon{font-size:2.8rem;margin-bottom:10px;display:block}
+.dz-title{font-size:1rem;font-weight:700;margin-bottom:4px}
+.dz-sub{font-size:.8rem;color:var(--t3)}
+.dz-fmts{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+.dz-fmt{padding:3px 10px;border-radius:100px;font-size:.7rem;font-weight:600;background:rgba(251,146,60,.1);color:var(--a1);border:1px solid rgba(251,146,60,.2)}
+.col-map{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:var(--bg);border-radius:var(--r2);border:1px solid var(--b0)}
+.cmf{display:flex;flex-direction:column;gap:4px;flex:1;min-width:110px}
+.cmf label{font-size:.68rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
+.cm-sel{padding:7px 10px;background:var(--card);border:1px solid var(--b0);border-radius:var(--r1);color:var(--t1);font-family:'Inter',sans-serif;font-size:.82rem;outline:none;cursor:pointer}
+.cm-sel:focus{border-color:var(--a1)}
+.imp-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.it-l{display:flex;align-items:center;gap:8px;flex:1}
+.it-r{display:flex;gap:8px;flex-wrap:wrap}
+.sel-ct{font-size:.8rem;color:var(--t2)}.sel-ct span{color:var(--a1);font-weight:700}
+.imp-tw{background:var(--card);border:1px solid var(--b0);border-radius:var(--r3);overflow:hidden;box-shadow:var(--sh1);margin-bottom:18px}
+.imp-tws{overflow-x:auto}
+.imp-table{width:100%;border-collapse:collapse;min-width:560px}
+.imp-table thead th{background:var(--bg2);padding:11px 12px;text-align:left;font-size:.7rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--b0)}
+.imp-table tbody tr{border-bottom:1px solid var(--b0);transition:var(--tr)}
+.imp-table tbody tr:last-child{border-bottom:none}
+.imp-table tbody tr:hover{background:var(--card2)}
+.imp-table tbody tr.rck{background:rgba(251,146,60,.05)}
+.imp-table tbody tr.rsent{background:rgba(34,197,94,.04)}
+.imp-table tbody td{padding:10px 12px;font-size:.82rem;vertical-align:middle}
+.cb-c{width:36px;text-align:center}
+.cb{width:15px;height:15px;cursor:pointer;accent-color:var(--a1)}
+.imp-name{font-weight:600}
+.imp-email{color:var(--em);font-size:.8rem}
+.imp-phone{color:var(--ph);font-size:.8rem}
+.ib{display:inline-flex;padding:2px 8px;border-radius:100px;font-size:.68rem;font-weight:600}
+.ib-p{background:rgba(100,116,139,.12);color:var(--t3)}
+.ib-s{background:rgba(251,146,60,.12);color:var(--a1)}
+.ib-ok{background:rgba(34,197,94,.12);color:var(--ok)}
+.ib-f{background:rgba(239,68,68,.12);color:var(--err)}
+.send-bar{background:var(--card);border:1px solid var(--b0);border-radius:var(--r3);padding:22px;margin-bottom:18px}
+.send-bar h3{font-size:.95rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.imp-msg{width:100%;min-height:100px;padding:11px 13px;background:var(--bg);border:1px solid var(--b0);border-radius:var(--r2);color:var(--t1);font-family:'Inter',sans-serif;font-size:.86rem;line-height:1.6;outline:none;resize:vertical;transition:var(--tr);margin-bottom:12px}
+.imp-msg:focus{border-color:var(--em);box-shadow:0 0 0 3px rgba(167,139,250,.1)}
+.imp-msg::placeholder{color:var(--t3)}
+.snd-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.prog-wrap{margin-top:14px;display:none}
+.ipb{width:100%;height:7px;background:var(--bg);border-radius:100px;overflow:hidden;margin-bottom:6px}
+.ipf{height:100%;background:var(--ag);border-radius:100px;transition:width .3s ease;width:0%}
+.ipt{font-size:.8rem;color:var(--t2);margin-bottom:8px}
+.imp-log{max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.il-item{display:flex;align-items:flex-start;gap:7px;padding:6px 10px;background:var(--bg);border-radius:var(--r1);font-size:.76rem;flex-wrap:wrap}
+.il-name{font-weight:600;flex:1}
+.il-email{color:var(--em);font-size:.7rem}
+.il-time{color:var(--t3);font-size:.7rem}
+/* RESULT ROW */
+.row-sent{background:rgba(34,197,94,.03)!important}
+/* FLOATING */
+.fab{position:fixed;bottom:84px;right:22px;z-index:999;width:50px;height:50px;border-radius:50%;background:var(--ag);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(251,146,60,.4);display:none;align-items:center;justify-content:center;transition:var(--tr)}
+.fab:hover{transform:scale(1.1)}
+.fab svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.5}
+.fab-panel{position:fixed;bottom:144px;right:22px;z-index:1000;width:340px;max-width:calc(100vw - 44px);background:var(--card);border:1px solid var(--b1);border-radius:var(--r3);padding:18px;box-shadow:var(--sh2);display:none;flex-direction:column;gap:10px;animation:fs .3s ease}
+.fab-panel.open{display:flex}
+@keyframes fs{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.fab-title{font-size:.83rem;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.fab-x{background:none;border:none;color:var(--t3);font-size:1.1rem;cursor:pointer}
+.stb{position:fixed;bottom:22px;right:22px;z-index:999;width:44px;height:44px;border-radius:50%;background:var(--card);border:1px solid var(--b0);color:var(--t2);cursor:pointer;display:none;align-items:center;justify-content:center;transition:var(--tr);box-shadow:var(--sh1)}
+.stb:hover{border-color:var(--a1);color:var(--a1);transform:translateY(-2px)}
+.stb svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.5}
+.rh{display:flex;justify-content:space-between;align-items:center;margin:20px 0 12px;flex-wrap:wrap;gap:10px}
+.rh h2{font-size:1.1rem;font-weight:700}
+.cnt{background:var(--as);border:1px solid var(--b1);padding:3px 10px;border-radius:100px;font-size:.76rem;font-weight:600;color:var(--a1);margin-left:8px}
+.ra{display:flex;gap:8px;flex-wrap:wrap}
+footer{text-align:center;padding:36px 0 24px;color:var(--t3);font-size:.76rem}
+footer span{color:var(--a1);font-weight:600}
+.fade-in{animation:fi .5s ease forwards;opacity:0}
+@keyframes fi{to{opacity:1}}
+@media(max-width:768px){.sr,.setup-row,.mc-row{flex-direction:column}.rh{flex-direction:column;align-items:flex-start}.fab-panel{right:10px;bottom:136px;width:calc(100vw - 20px)}.fab{right:14px;bottom:74px}.stb{right:14px;bottom:14px}.top-nav{flex-direction:column}.nb{width:100%}}
+</style>
 </head>
 <body>
 <div class="bg-fx"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
 <div class="wrap">
 
-    <!-- HEADER -->
-    <header>
-        <h1>Details Finder</h1>
-        <p class="made-by">Made by <span>Chetan Hegde</span></p>
-    </header>
+<header>
+  <h1>Details Finder</h1>
+  <p class="made-by">Made by <span>Chetan Hegde</span></p>
+</header>
 
-        <!-- TOP NAV -->
-    <nav class="top-nav">
-        <button class="nav-btn active" id="navFinder" onclick="showPage('finder')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            Finder
+<!-- NAV -->
+<nav class="top-nav">
+  <button class="nb active" id="navFinder" onclick="showPage('finder')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Finder
+  </button>
+  <button class="nb" id="navImport" onclick="showPage('import')">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Import &amp; Send
+  </button>
+</nav>
+
+<!-- DAILY COUNTER -->
+<div class="daily-bar">
+  <span style="font-size:1.3rem">📧</span>
+  <div class="daily-info">
+    <span class="daily-lbl">Brevo Emails Sent Today</span>
+    <span class="daily-num"><span id="dailySent">0</span> / 300</span>
+  </div>
+  <div class="daily-track">
+    <div class="dpb"><div class="dpf" id="dailyFill" style="width:0%"></div></div>
+    <div class="daily-rem" id="dailyRem">300 remaining — resets at midnight</div>
+  </div>
+  <button class="btn bs bsm" onclick="resetDaily()" title="Reset counter">↺ Reset</button>
+</div>
+
+<!-- ==================== FINDER PAGE ==================== -->
+<div id="finderPage">
+
+  <div class="card">
+    <h2><span class="ico">🔍</span> Search</h2>
+    <p class="subtitle">Enter location and category to find business contact details worldwide</p>
+    <div class="sr">
+      <div class="sf" style="flex:2">
+        <label class="lbl">Location</label>
+        <input type="text" id="areaInput" class="inp" placeholder="e.g., Delhi, Mumbai, New York...">
+      </div>
+      <div class="sf" style="flex:1.5">
+        <label class="lbl">Category</label>
+        <div class="dd" id="catDd">
+          <div class="dd-sel" onclick="toggleDd()"><span id="ddTxt">🍽️ Restaurants &amp; Cafes</span><span class="dd-arr">▼</span></div>
+          <div class="dd-menu" id="ddMenu">
+            <input type="text" class="dd-si" id="ddSi" placeholder="Search category..." oninput="filterDd(this.value)">
+            <div id="ddOpts"></div>
+          </div>
+        </div>
+        <input type="hidden" id="catVal" value="restaurant|cafe">
+      </div>
+      <div class="sf" style="flex:0;align-self:flex-end">
+        <button class="btn bp" id="searchBtn" onclick="startSearch()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Search
         </button>
-        <button class="nav-btn" id="navImport" onclick="showPage('import')">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Import &amp; Send
+      </div>
+    </div>
+  </div>
+
+  <div class="sb" id="statusBar"><div class="spin"></div><span id="statusTxt">Searching...</span></div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="sc"><div class="sv" id="stTotal">0</div><div class="sl">Total</div></div>
+    <div class="sc"><div class="sv" id="stPhone">0</div><div class="sl">📞 Phone</div></div>
+    <div class="sc"><div class="sv" id="stEmail">0</div><div class="sl">📧 Email</div></div>
+    <div class="sc"><div class="sv" id="stInsta">0</div><div class="sl">📸 Insta</div></div>
+    <div class="sc"><div class="sv" id="stWeb">0</div><div class="sl">🌐 Web</div></div>
+  </div>
+
+  <div id="resultsArea" style="display:none" class="fade-in">
+    <div class="rh">
+      <h2>Results <span class="cnt" id="rCount">0</span></h2>
+      <div class="ra">
+        <button class="btn bs bsm" onclick="exportCSV()">📥 CSV</button>
+        <button class="btn bs bsm" onclick="copyAll()">📋 Copy</button>
+      </div>
+    </div>
+    <div class="ftabs">
+      <span class="ftab active" onclick="filterR(this,'all')">All</span>
+      <span class="ftab" onclick="filterR(this,'phone')">📞 Phone</span>
+      <span class="ftab" onclick="filterR(this,'email')">📧 Email</span>
+      <span class="ftab" onclick="filterR(this,'instagram')">📸 Instagram</span>
+      <span class="ftab" onclick="filterR(this,'whatsapp')">💬 WhatsApp</span>
+    </div>
+    <div class="tw"><div class="tws">
+      <table>
+        <thead><tr><th>#</th><th>Name</th><th>Phone/WhatsApp</th><th>Email</th><th>Instagram</th><th>Type</th><th>Website</th><th>Status</th></tr></thead>
+        <tbody id="rBody"></tbody>
+      </table>
+    </div></div>
+  </div>
+
+  <div id="emptyState" class="empty">
+    <div class="ei">🔍</div><h3>Search Any Business</h3>
+    <p>Enter a location and choose a category to find contact details.</p>
+  </div>
+
+  <!-- EMAIL SETUP -->
+  <div class="card" style="border-color:rgba(167,139,250,.2)">
+    <h2><span class="ico">⚙️</span> Email Sender Setup</h2>
+    <p class="subtitle">Connect Brevo to send real emails — 300 free per day</p>
+    <div class="setup-row">
+      <div class="setup-field">
+        <label class="lbl">Your Name</label>
+        <input type="text" id="senderName" class="inp inp-sm" placeholder="e.g., Chetan Hegde">
+      </div>
+      <div class="setup-field">
+        <label class="lbl">Your Email (verified in Brevo)</label>
+        <input type="email" id="senderEmail" class="inp inp-sm" placeholder="e.g., you@gmail.com">
+      </div>
+    </div>
+    <div class="setup-field" style="margin-bottom:12px">
+      <label class="lbl">Brevo API Key <a href="https://app.brevo.com" target="_blank" style="color:var(--em);font-weight:400;text-transform:none;letter-spacing:0">Get free →</a></label>
+      <div class="key-row">
+        <input type="password" id="brevoKey" class="inp inp-sm" placeholder="xkeysib-...">
+        <button class="tv" onclick="toggleKey()">👁️</button>
+        <button class="btn bem bsm" onclick="saveEmailSetup()">💾 Save</button>
+      </div>
+    </div>
+    <div class="test-box">
+      <label class="lbl" style="margin-bottom:8px">🧪 Test — Send a Test Email</label>
+      <div class="test-row">
+        <input type="email" id="testToEmail" class="inp inp-sm" placeholder="Enter any email to test (e.g., your own)">
+        <button id="testBtn" class="btn bsm" style="background:linear-gradient(135deg,#38bdf8,#0284c7);color:#fff" onclick="testEmail()">📨 Send Test</button>
+      </div>
+      <div id="testResult" style="margin-top:8px"></div>
+    </div>
+    <div class="setup-note">
+      📋 <strong>Steps:</strong> 1) <a href="https://app.brevo.com" target="_blank">app.brevo.com</a> → Sign up free. 2) Settings → <strong>Senders &amp; IPs → Add Sender</strong> → verify email. 3) Settings → <strong>API Keys → Create Key</strong> → paste above.
+    </div>
+    <div id="setupSaved" style="display:none;margin-top:10px"><span class="setup-saved">✅ Setup saved!</span></div>
+  </div>
+
+  <!-- CAMPAIGN -->
+  <div id="campaignSection" style="display:none" class="fade-in">
+    <div class="card" style="border-color:rgba(37,211,102,.2)">
+      <h2><span class="ico">📤</span> Message Campaign</h2>
+      <p class="subtitle">Send to all contacts via WhatsApp or Email</p>
+      <div class="mc-row">
+        <div class="mc"><span class="mc-ico">💬</span><div><div class="mc-val" id="mcWa">0</div><div class="mc-lbl">WhatsApp</div></div></div>
+        <div class="mc"><span class="mc-ico">📧</span><div><div class="mc-val" id="mcEm">0</div><div class="mc-lbl">Emails</div></div></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="lbl">Your Message</label>
+        <textarea id="msgTxt" class="msg-ta" placeholder="Hi {name}! Special offer just for you. Reply YES to know more!&#10;&#10;Use {name} to personalize."></textarea>
+        <div class="char-ct"><span id="charCt">0</span> chars • <span style="color:var(--a1)">Use {name} to personalize</span></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="lbl">Email Subject</label>
+        <input type="text" id="emailSubj" class="inp inp-sm" placeholder="e.g., Special Offer For You!">
+      </div>
+      <!-- Batch selector -->
+      <div class="batch-row">
+        <label>📦 Batch size:</label>
+        <div class="btabs">
+          <span class="btab" onclick="setBatch(this,10,'finderBatch','bNote')">10</span>
+          <span class="btab active" onclick="setBatch(this,50,'finderBatch','bNote')">50</span>
+          <span class="btab" onclick="setBatch(this,100,'finderBatch','bNote')">100</span>
+          <span class="btab" onclick="setBatch(this,999999,'finderBatch','bNote')">All</span>
+        </div>
+        <span id="bNote" class="batch-note">Sends 50 at a time</span>
+      </div>
+      <input type="hidden" id="finderBatch" value="50">
+      <div class="camp-btns">
+        <button class="btn bwa" id="btnWa" onclick="sendAllWA()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.963 7.963 0 01-4.113-1.14l-.287-.172-2.6.772.772-2.6-.172-.287A7.963 7.963 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/></svg>
+          Send via WhatsApp
         </button>
-    </nav>
-
-    <!-- DAILY COUNTER (shared, always visible) -->
-    <div class="daily-bar" id="dailyBar">
-        <span style="font-size:1.4rem">📧</span>
-        <div class="daily-info">
-            <span class="daily-label">Brevo Emails Sent Today</span>
-            <span class="daily-nums"><span id="dailySent">0</span> / 300</span>
-        </div>
-        <div class="daily-track">
-            <div class="daily-pbar"><div class="daily-pfill" id="dailyFill" style="width:0%"></div></div>
-            <div class="daily-reset" id="dailyReset">Resets at midnight</div>
-        </div>
-        <button class="btn btn-secondary btn-sm" onclick="resetDailyCount()" title="Reset counter">↺ Reset</button>
+        <button class="btn bem" id="btnEmail" onclick="sendAllEmail()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Send via Email (Brevo)
+        </button>
+      </div>
+      <div class="log-section" id="logSection" style="display:none">
+        <div class="log-title">📊 Send Log</div>
+        <div class="log-list" id="logList"></div>
+      </div>
     </div>
+  </div>
 
-    <!-- FINDER PAGE -->
-    <div id="finderPage">
-    <section class="card" id="searchCard">
-        <h2><span class="ico">🔍</span> Search</h2>
-        <p class="subtitle">Enter a location and category to find business contact details worldwide</p>
-        <div class="search-row">
-            <div class="sf" style="flex:2">
-                <label class="lbl">Location</label>
-                <input type="text" id="areaInput" class="inp" placeholder="e.g., Delhi, Mumbai, Bangalore, New York...">
-            </div>
-            <div class="sf" style="flex:1.5">
-                <label class="lbl">Category</label>
-                <div class="dd" id="catDd">
-                    <div class="dd-sel" onclick="toggleDd()"><span id="ddTxt">🍽️ Restaurants &amp; Cafes</span><span class="dd-arrow">▼</span></div>
-                    <div class="dd-menu" id="ddMenu">
-                        <input type="text" class="dd-si" id="ddSi" placeholder="Search category..." oninput="filterDd(this.value)">
-                        <div id="ddOpts"></div>
-                    </div>
-                </div>
-                <input type="hidden" id="catVal" value="restaurant|cafe">
-            </div>
-            <div class="sf" style="flex:0;align-self:flex-end">
-                <button class="btn btn-primary" id="searchBtn" onclick="startSearch()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    Search
-                </button>
-            </div>
-        </div>
-    </section>
+  <footer>Made with ❤️ by <span>Chetan Hegde</span></footer>
+</div><!-- end finderPage -->
 
-    <!-- STATUS -->
-    <div class="sb" id="statusBar"><div class="spin"></div><span id="statusTxt">Searching...</span></div>
+<!-- ==================== IMPORT PAGE ==================== -->
+<div id="importPage" style="display:none">
 
-    <!-- STATS -->
-    <div class="stats-row" id="statsRow">
-        <div class="sc"><div class="sv" id="stTotal">0</div><div class="sl">Total</div></div>
-        <div class="sc"><div class="sv" id="stPhone">0</div><div class="sl">📞 Phone</div></div>
-        <div class="sc"><div class="sv" id="stEmail">0</div><div class="sl">📧 Email</div></div>
-        <div class="sc"><div class="sv" id="stInsta">0</div><div class="sl">📸 Insta</div></div>
-        <div class="sc"><div class="sv" id="stWeb">0</div><div class="sl">🌐 Web</div></div>
+  <div class="card">
+    <h2><span class="ico">📂</span> Import Contact List</h2>
+    <p class="subtitle">Upload Excel (.xlsx) or CSV — your file stays private, processed in browser</p>
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+      <span class="dz-icon">📄</span>
+      <div class="dz-title">Click to upload or drag &amp; drop</div>
+      <div class="dz-sub">Supports Excel and CSV files</div>
+      <div class="dz-fmts"><span class="dz-fmt">.xlsx</span><span class="dz-fmt">.xls</span><span class="dz-fmt">.csv</span><span class="dz-fmt">.ods</span></div>
     </div>
-
-    <!-- RESULTS -->
-    <div id="resultsArea" style="display:none" class="fade-in">
-        <div class="rh">
-            <h2>Results <span class="count" id="rCount">0</span></h2>
-            <div class="ra">
-                <button class="btn btn-secondary btn-sm" onclick="exportCSV()">📥 Export CSV</button>
-                <button class="btn btn-secondary btn-sm" onclick="copyAll()">📋 Copy All</button>
-            </div>
-        </div>
-        <div class="ftabs">
-            <span class="ftab active" onclick="filterR(this,'all')">All</span>
-            <span class="ftab" onclick="filterR(this,'phone')">📞 Phone</span>
-            <span class="ftab" onclick="filterR(this,'email')">📧 Email</span>
-            <span class="ftab" onclick="filterR(this,'instagram')">📸 Instagram</span>
-            <span class="ftab" onclick="filterR(this,'whatsapp')">💬 WhatsApp</span>
-        </div>
-        <div class="tw"><div class="tw-scroll">
-        <table>
-            <thead><tr>
-                <th>#</th><th>Name</th><th>Phone / WhatsApp</th><th>Email</th><th>Instagram</th><th>Type</th><th>Website</th><th>Status</th>
-            </tr></thead>
-            <tbody id="rBody"></tbody>
-        </table>
-        </div></div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.ods" style="display:none" onchange="handleFile(this.files[0])">
+    <div id="colMapRow" style="display:none">
+      <label class="lbl" style="margin-bottom:8px">🗂 Map Your Columns</label>
+      <div class="col-map">
+        <div class="cmf"><label>Name</label><select id="colName" class="cm-sel" onchange="reRender()"></select></div>
+        <div class="cmf"><label>Email</label><select id="colEmail" class="cm-sel" onchange="reRender()"></select></div>
+        <div class="cmf"><label>Phone (optional)</label><select id="colPhone" class="cm-sel" onchange="reRender()"></select></div>
+      </div>
     </div>
+  </div>
 
-    <!-- EMPTY -->
-    <div id="emptyState" class="empty">
-        <div class="ei">🔍</div>
-        <h3>Search Any Business</h3>
-        <p>Enter a location and choose a category to find contact details like phone, email, Instagram &amp; WhatsApp.</p>
+  <div id="impTableSection" style="display:none">
+    <div class="rh">
+      <h2>Contacts <span class="cnt" id="impCount">0</span></h2>
+      <div class="ra"><button class="btn bs bsm" onclick="exportImpCSV()">📥 Export CSV</button></div>
     </div>
-
-    <!-- EMAIL SETUP -->
-    <!-- EMAIL SETUP - Always visible -->
-    <div id="emailSetupSection">
-        <div class="card email-setup-card">
-            <h2><span class="ico">⚙️</span> Email Sender Setup</h2>
-            <p class="subtitle">Connect your Brevo account to send real emails to contacts — 300 free emails/day</p>
-            <div class="setup-row">
-                <div class="setup-field">
-                    <label class="lbl">Your Name (Sender Name)</label>
-                    <input type="text" id="senderName" class="inp inp-sm" placeholder="e.g., Chetan Hegde">
-                </div>
-                <div class="setup-field">
-                    <label class="lbl">Your Email (Verified in Brevo)</label>
-                    <input type="email" id="senderEmail" class="inp inp-sm" placeholder="e.g., you@gmail.com">
-                </div>
-            </div>
-            <div class="setup-field" style="margin-bottom:14px">
-                <label class="lbl">Brevo API Key <a href="https://app.brevo.com" target="_blank" style="color:var(--email-color);font-weight:400;text-transform:none;letter-spacing:0">Get free key →</a></label>
-                <div class="key-row">
-                    <input type="password" id="brevoKey" class="inp inp-sm" placeholder="xkeysib-...">
-                    <button class="toggle-vis" onclick="toggleKey()">👁️</button>
-                    <button class="btn btn-sm" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff" onclick="saveEmailSetup()">💾 Save</button>
-                </div>
-            </div>
-
-            <!-- TEST EMAIL BOX -->
-            <div style="background:var(--bg-primary);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:16px;margin-bottom:14px">
-                <label class="lbl" style="margin-bottom:10px">🧪 Test Your Setup — Send a Test Email</label>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-                    <input type="email" id="testToEmail" class="inp inp-sm" style="flex:1;min-width:200px" placeholder="Enter any email to test (e.g., your own)">
-                    <button id="testEmailBtn" class="btn btn-sm" style="background:linear-gradient(135deg,#38bdf8,#0284c7);color:#fff;white-space:nowrap" onclick="testBrevoEmail()">📨 Send Test</button>
-                </div>
-                <div id="testEmailResult" style="margin-top:10px"></div>
-            </div>
-
-            <div class="setup-note">
-                📋 <strong>Setup steps:</strong> 1) Go to <a href="https://app.brevo.com" target="_blank">app.brevo.com</a> → Sign up free. 2) Go to <strong>Settings → Senders &amp; IPs → Add Sender</strong> → verify your email. 3) Go to <strong>Settings → API Keys → Create Key</strong> → paste it above.
-            </div>
-            <div id="setupSaved" style="display:none;margin-top:12px">
-                <span class="setup-saved">✅ Setup saved — ready to send!</span>
-            </div>
-        </div>
+    <div class="imp-toolbar">
+      <div class="it-l">
+        <input type="checkbox" id="selAll" class="cb" onchange="toggleSelAll(this.checked)">
+        <label for="selAll" style="font-size:.8rem;color:var(--t2);cursor:pointer">Select All</label>
+        <span class="sel-ct">(<span id="selCt">0</span> selected)</span>
+      </div>
+      <div class="it-r">
+        <button class="btn bs bsm" onclick="selWithEmail()">📧 With Email</button>
+        <button class="btn bs bsm" onclick="clearSel()">✕ Clear</button>
+      </div>
     </div>
+    <div class="imp-tw"><div class="imp-tws">
+      <table class="imp-table">
+        <thead><tr>
+          <th class="cb-c"><input type="checkbox" id="selAllH" class="cb" onchange="toggleSelAll(this.checked)"></th>
+          <th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Status</th>
+        </tr></thead>
+        <tbody id="impBody"></tbody>
+      </table>
+    </div></div>
+  </div>
 
-    <!-- CAMPAIGN -->
-    <div id="campaignSection" style="display:none" class="fade-in">
-        <div class="card camp-card">
-            <h2><span class="ico">📤</span> Message Campaign</h2>
-            <p class="subtitle">Type your message once — send to all contacts via WhatsApp or Email</p>
-
-            <div class="mc-row">
-                <div class="mc"><span class="mc-ico">💬</span><div><div class="mc-val" id="mcWa">0</div><div class="mc-lbl">WhatsApp Numbers</div></div></div>
-                <div class="mc"><span class="mc-ico">📧</span><div><div class="mc-val" id="mcEm">0</div><div class="mc-lbl">Emails Available</div></div></div>
-            </div>
-
-            <div style="margin-bottom:16px">
-                <label class="lbl">Your Message</label>
-                <textarea id="msgTxt" class="msg-ta" placeholder="Type your message here...&#10;&#10;Example:&#10;Hi {name}! We have a special offer this week. Reply YES to know more!&#10;&#10;Note: {name} will be auto-replaced with the business name."></textarea>
-                <div class="char-ct"><span id="charCt">0</span> characters • <span style="color:var(--accent-1)">Use {name} to personalize</span></div>
-            </div>
-
-            <div style="margin-bottom:20px">
-                <label class="lbl">Email Subject <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(for email only)</span></label>
-                <input type="text" id="emailSubj" class="inp inp-sm" placeholder="e.g., Special Offer Just For You!">
-            </div>
-
-            <div class="camp-btns">
-                <!-- Batch size selector -->
-                <div class="batch-row" style="width:100%">
-                    <label>📦 Send in batches of:</label>
-                    <div class="batch-tabs">
-                        <span class="btab" onclick="setBatch(this,10)">10</span>
-                        <span class="btab active" onclick="setBatch(this,50)">50</span>
-                        <span class="btab" onclick="setBatch(this,100)">100</span>
-                        <span class="btab" onclick="setBatch(this,999999)">All</span>
-                    </div>
-                    <span id="batchNote" style="font-size:.75rem;color:var(--text-muted)">Sends 50 at a time to stay within limits</span>
-                </div>
-                <input type="hidden" id="finderBatch" value="50">
-                <button class="btn btn-wa" id="btnWa" onclick="sendAllWA()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.963 7.963 0 01-4.113-1.14l-.287-.172-2.6.772.772-2.6-.172-.287A7.963 7.963 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/></svg>
-                    Send via WhatsApp
-                </button>
-                <button class="btn btn-email" id="btnEmail" onclick="sendAllEmail()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                    Send via Email (Brevo)
-                </button>
-            </div>
-
-            <!-- SEND LOG -->
-            <div class="log-section" id="logSection" style="display:none">
-                <div class="log-title">📊 Send Log</div>
-                <div class="log-list" id="logList"></div>
-            </div>
-        </div>
+  <div class="send-bar" id="impSendBar" style="display:none">
+    <h3>📤 Send Email to Selected</h3>
+    <div style="margin-bottom:10px">
+      <label class="lbl">Email Subject</label>
+      <input type="text" id="impSubject" class="inp inp-sm" placeholder="e.g., Special Offer For You!" style="margin-bottom:10px">
+      <label class="lbl">Message <span style="color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0">— use {name} to personalize</span></label>
+      <textarea id="impMsg" class="imp-msg" placeholder="Hi {name},&#10;&#10;We have a special offer this week!&#10;&#10;Best regards,&#10;Chetan Hegde"></textarea>
     </div>
+    <!-- Batch -->
+    <div class="batch-row">
+      <label>📦 Batch size:</label>
+      <div class="btabs">
+        <span class="btab" onclick="setBatch(this,10,'impBatch','ibNote')">10</span>
+        <span class="btab active" onclick="setBatch(this,50,'impBatch','ibNote')">50</span>
+        <span class="btab" onclick="setBatch(this,100,'impBatch','ibNote')">100</span>
+        <span class="btab" onclick="setBatch(this,999999,'impBatch','ibNote')">All</span>
+      </div>
+      <span id="ibNote" class="batch-note">Sends 50 at a time</span>
+    </div>
+    <input type="hidden" id="impBatch" value="50">
+    <div class="snd-acts">
+      <button class="btn bem" id="impSendBtn" onclick="sendSelected()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Send to Selected (<span id="sndCt">0</span>)
+      </button>
+      <button class="btn bp" onclick="sendAll()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Send to All with Email
+      </button>
+    </div>
+    <div class="prog-wrap" id="impProg">
+      <div class="ipb"><div class="ipf" id="ipFill"></div></div>
+      <div class="ipt" id="ipTxt">Sending...</div>
+      <div class="imp-log" id="impLog"></div>
+    </div>
+  </div>
 
-    <footer>Made with ❤️ by <span>Chetan Hegde</span></footer>
-    </div><!-- end finderPage -->
+  <div class="card" style="border-color:rgba(167,139,250,.2)">
+    <h2><span class="ico">⚙️</span> Email Setup Required</h2>
+    <p class="subtitle">Go to Finder tab → Email Sender Setup to configure Brevo. <a href="#" onclick="showPage('finder');setTimeout(function(){document.getElementById('senderName').focus()},300);return false;" style="color:var(--em)">Set it up →</a></p>
+  </div>
 
-    <!-- IMPORT PAGE -->
-    <div id="importPage" style="display:none">
+  <footer>Made with ❤️ by <span>Chetan Hegde</span></footer>
+</div><!-- end importPage -->
 
-        <!-- FILE UPLOAD -->
-        <div class="card" style="margin-bottom:20px">
-            <h2><span class="ico">📂</span> Import Contact List</h2>
-            <p class="subtitle">Upload an Excel (.xlsx) or CSV file with your contacts — emails, names, phone numbers</p>
+</div><!-- end wrap -->
 
-            <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()" ondragover="dzDragOver(event)" ondragleave="dzDragLeave()" ondrop="dzDrop(event)">
-                <span class="dz-icon">📄</span>
-                <div class="dz-title">Click to upload or drag &amp; drop your file here</div>
-                <div class="dz-sub">Your file stays private — processed only in your browser</div>
-                <div class="dz-formats">
-                    <span class="dz-fmt">.xlsx (Excel)</span>
-                    <span class="dz-fmt">.xls (Excel 97)</span>
-                    <span class="dz-fmt">.csv</span>
-                    <span class="dz-fmt">.ods</span>
-                </div>
-            </div>
-            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.ods" style="display:none" onchange="handleFile(this.files[0])">
-
-            <!-- Column Mapping -->
-            <div id="colMapRow" style="display:none">
-                <label class="lbl" style="margin-bottom:8px">🗂️ Map your columns</label>
-                <div class="col-map">
-                    <div class="col-map-field">
-                        <label>Name Column</label>
-                        <select id="colName" class="col-map-sel" onchange="reRenderImport()"></select>
-                    </div>
-                    <div class="col-map-field">
-                        <label>Email Column</label>
-                        <select id="colEmail" class="col-map-sel" onchange="reRenderImport()"></select>
-                    </div>
-                    <div class="col-map-field">
-                        <label>Phone Column (optional)</label>
-                        <select id="colPhone" class="col-map-sel" onchange="reRenderImport()"></select>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- CONTACTS TABLE -->
-        <div id="impTableSection" style="display:none">
-            <div class="rh">
-                <h2>Contacts <span class="count" id="impCount">0</span></h2>
-                <div class="ra">
-                    <button class="btn btn-secondary btn-sm" onclick="exportImpCSV()">📥 Export CSV</button>
-                </div>
-            </div>
-
-            <div class="imp-toolbar">
-                <div class="it-left">
-                    <input type="checkbox" id="selectAll" class="cb" onchange="toggleSelectAll(this.checked)" title="Select All">
-                    <label for="selectAll" style="font-size:.82rem;color:var(--text-secondary);cursor:pointer">Select All</label>
-                    <span class="sel-count">(<span id="selCount">0</span> selected)</span>
-                </div>
-                <div class="it-right">
-                    <button class="btn btn-secondary btn-sm" onclick="selectWithEmail()">📧 Select with Email</button>
-                    <button class="btn btn-secondary btn-sm" onclick="clearSelection()">✕ Clear</button>
-                </div>
-            </div>
-
-            <div class="imp-tw"><div class="imp-tw-scroll">
-            <table class="imp-table">
-                <thead><tr>
-                    <th class="cb-cell"><input type="checkbox" id="selectAllHead" class="cb" onchange="toggleSelectAll(this.checked)"></th>
-                    <th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Status</th>
-                </tr></thead>
-                <tbody id="impBody"></tbody>
-            </table>
-            </div></div>
-        </div>
-
-        <!-- SEND PANEL -->
-        <div class="imp-send-bar" id="impSendBar" style="display:none">
-            <h3>📤 Send Email to Selected Contacts</h3>
-            <div style="margin-bottom:12px">
-                <label class="lbl">Email Subject</label>
-                <input type="text" id="impSubject" class="inp inp-sm" placeholder="e.g., Special Offer For You!" style="margin-bottom:10px">
-                <label class="lbl">Your Message <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">— use {name} for personalization</span></label>
-                <textarea id="impMsg" class="imp-msg-area" placeholder="Hi {name},
-
-We have an exciting offer for you this week!
-
-Best regards,
-Chetan Hegde"></textarea>
-            </div>
-            <div class="imp-send-actions">
-                <div class="batch-row" style="width:100%;margin-bottom:10px">
-                    <label>📦 Send in batches of:</label>
-                    <div class="batch-tabs">
-                        <span class="btab" onclick="setImpBatch(this,10)">10</span>
-                        <span class="btab active" onclick="setImpBatch(this,50)">50</span>
-                        <span class="btab" onclick="setImpBatch(this,100)">100</span>
-                        <span class="btab" onclick="setImpBatch(this,999999)">All</span>
-                    </div>
-                    <span id="impBatchNote" style="font-size:.75rem;color:var(--text-muted)">Sends 50 at a time</span>
-                </div>
-                <input type="hidden" id="impBatch" value="50">
-                <button class="btn btn-email" id="impSendBtn" onclick="sendToSelected()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                    Send to Selected (<span id="sendSelCount">0</span>)
-                </button>
-                <button class="btn btn-primary" onclick="sendToAll()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                    Send to All with Email
-                </button>
-            </div>
-            <!-- PROGRESS -->
-            <div class="imp-prog-wrap" id="impProgWrap">
-                <div class="imp-prog-bar"><div class="imp-prog-fill" id="impProgFill"></div></div>
-                <div class="imp-prog-txt" id="impProgTxt">Sending...</div>
-                <div class="imp-log" id="impLog"></div>
-            </div>
-        </div>
-
-        <!-- Email setup reminder -->
-        <div class="card" style="border-color:rgba(167,139,250,.2);margin-bottom:20px">
-            <h2><span class="ico">⚙️</span> Email Setup (required for sending)</h2>
-            <p class="subtitle">Make sure your Brevo account is set up below — <a href="#" onclick="showPage('finder');setTimeout(function(){document.getElementById('emailSetupSection').scrollIntoView({behavior:'smooth'})},200);return false;" style="color:var(--email-color)">go to Email Setup →</a></p>
-        </div>
-
-        <footer>Made with ❤️ by <span>Chetan Hegde</span></footer>
-    </div><!-- end importPage -->
-
-<!-- SEND MODAL -->
+<!-- MODAL -->
 <div class="overlay" id="overlay" onclick="closeModal()"></div>
 <div class="modal" id="sendModal">
-    <div class="mh">
-        <div class="mt" id="modalTitle">💬 Sending via WhatsApp</div>
-        <button class="mc-btn" onclick="closeModal()">✕</button>
-    </div>
-    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
-    <div class="prog-txt" id="progTxt">Contact 1 of 10</div>
-    <div class="preview-box" id="previewBox"></div>
-    <div class="m-actions">
-        <button class="btn btn-secondary btn-sm" onclick="skipContact()">Skip ⏭</button>
-        <button class="btn btn-primary btn-sm" id="nextBtn" onclick="sendNext()">Open Next →</button>
-        <button class="btn btn-secondary btn-sm" id="doneBtn" style="display:none" onclick="closeModal()">Done ✓</button>
-    </div>
-    <div class="m-note" id="modalNote">💡 Each message opens in a new tab. Allow popups if Chrome asks.</div>
+  <div class="mh"><div class="mt" id="modalTitle">Sending</div><button class="mx" onclick="closeModal()">✕</button></div>
+  <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+  <div class="prog-txt" id="progTxt">Contact 1 of 10</div>
+  <div class="preview-box" id="previewBox"></div>
+  <div class="m-actions">
+    <button class="btn bs bsm" onclick="skipContact()">Skip ⏭</button>
+    <button class="btn bp bsm" id="nextBtn" onclick="sendNext()">Open Next →</button>
+    <button class="btn bs bsm" id="doneBtn" style="display:none" onclick="closeModal()">Done ✓</button>
+  </div>
+  <div class="m-note" id="modalNote">💡 Tip: Allow popups in Chrome.</div>
 </div>
 
-<!-- FAB SEARCH -->
-<button class="fab-search" id="fabBtn" onclick="toggleFab()">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+<!-- FAB -->
+<button class="fab" id="fabBtn" onclick="toggleFab()">
+  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 </button>
 <div class="fab-panel" id="fabPanel">
-    <div class="fab-title">Quick Search <button class="fab-x" onclick="toggleFab()">✕</button></div>
-    <input type="text" id="fabLoc" class="inp inp-sm" placeholder="Location...">
-    <input type="text" id="fabCat" class="inp inp-sm" placeholder="Category (e.g., restaurant, hotel)...">
-    <button class="btn btn-primary" onclick="doFabSearch()">Search</button>
+  <div class="fab-title">Quick Search <button class="fab-x" onclick="toggleFab()">✕</button></div>
+  <input type="text" id="fabLoc" class="inp inp-sm" placeholder="Location...">
+  <input type="text" id="fabCat" class="inp inp-sm" placeholder="Category...">
+  <button class="btn bp" onclick="doFabSearch()">Search</button>
 </div>
-<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-    <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+<button class="stb" id="stbBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
 </button>
 
 <script>
-// ===========================
+// ============================================================
 // CATEGORIES
-// ===========================
+// ============================================================
 var CATS=[
-    {s:'Food & Drinks'},
-    {v:'restaurant|cafe',l:'Restaurants & Cafes',e:'🍽️'},
-    {v:'restaurant',l:'Restaurants',e:'🍛'},
-    {v:'cafe',l:'Cafes & Coffee Shops',e:'☕'},
-    {v:'fast_food',l:'Fast Food',e:'🍔'},
-    {v:'bar|pub',l:'Bars & Pubs',e:'🍺'},
-    {v:'ice_cream',l:'Ice Cream Parlours',e:'🍦'},
-    {v:'bakery',l:'Bakeries',e:'🥐'},
-    {s:'Health & Wellness'},
-    {v:'hospital|clinic',l:'Hospitals & Clinics',e:'🏥'},
-    {v:'pharmacy',l:'Pharmacies',e:'💊'},
-    {v:'dentist',l:'Dentists',e:'🦷'},
-    {v:'doctors',l:'Doctors',e:'👨‍⚕️'},
-    {v:'veterinary',l:'Veterinary / Pet Clinics',e:'🐾'},
-    {s:'Fitness & Beauty'},
-    {v:'gym|fitness_centre',l:'Gyms & Fitness',e:'🏋️'},
-    {v:'beauty|hairdresser',l:'Salons & Beauty',e:'💇'},
-    {v:'spa|massage',l:'Spa & Massage',e:'💆'},
-    {s:'Education'},
-    {v:'school',l:'Schools',e:'🏫'},
-    {v:'college|university',l:'Colleges & Universities',e:'🎓'},
-    {v:'library',l:'Libraries',e:'📚'},
-    {s:'Shopping'},
-    {v:'supermarket',l:'Supermarkets',e:'🛒'},
-    {v:'clothes|boutique',l:'Clothing & Boutiques',e:'👗'},
-    {v:'electronics',l:'Electronics Shops',e:'📱'},
-    {v:'furniture',l:'Furniture Stores',e:'🛋️'},
-    {v:'jewelry|jewellery',l:'Jewellery Shops',e:'💍'},
-    {v:'car_repair',l:'Car Dealers & Repairs',e:'🚗'},
-    {s:'Stay & Travel'},
-    {v:'hotel|guest_house|hostel',l:'Hotels & Guest Houses',e:'🏨'},
-    {v:'travel_agency',l:'Travel Agencies',e:'✈️'},
-    {v:'car_rental',l:'Car Rentals',e:'🚙'},
-    {s:'Services'},
-    {v:'bank',l:'Banks',e:'🏦'},
-    {v:'atm',l:'ATMs',e:'💳'},
-    {v:'post_office',l:'Post Offices',e:'📮'},
-    {v:'laundry|dry_cleaning',l:'Laundry & Dry Cleaning',e:'👔'},
-    {v:'lawyer|notary',l:'Lawyers & Notary',e:'⚖️'},
-    {v:'real_estate',l:'Real Estate Agents',e:'🏠'},
-    {s:'Entertainment'},
-    {v:'cinema',l:'Cinemas & Theatres',e:'🎬'},
-    {v:'nightclub',l:'Nightclubs',e:'🎶'},
-    {v:'amusement_arcade|theme_park',l:'Amusement & Gaming',e:'🎮'},
-    {s:'Other'},
-    {v:'place_of_worship',l:'Places of Worship',e:'🕌'},
-    {v:'fuel',l:'Petrol / Gas Stations',e:'⛽'},
-    {v:'police',l:'Police Stations',e:'🚔'},
-    {v:'fire_station',l:'Fire Stations',e:'🚒'},
+  {s:'Food & Drinks'},
+  {v:'restaurant|cafe',l:'Restaurants & Cafes',e:'🍽️'},
+  {v:'restaurant',l:'Restaurants',e:'🍛'},
+  {v:'cafe',l:'Cafes & Coffee',e:'☕'},
+  {v:'fast_food',l:'Fast Food',e:'🍔'},
+  {v:'bar|pub',l:'Bars & Pubs',e:'🍺'},
+  {v:'ice_cream',l:'Ice Cream',e:'🍦'},
+  {v:'bakery',l:'Bakeries',e:'🥐'},
+  {s:'Health'},
+  {v:'hospital|clinic',l:'Hospitals & Clinics',e:'🏥'},
+  {v:'pharmacy',l:'Pharmacies',e:'💊'},
+  {v:'dentist',l:'Dentists',e:'🦷'},
+  {v:'doctors',l:'Doctors',e:'👨‍⚕️'},
+  {s:'Fitness & Beauty'},
+  {v:'gym|fitness_centre',l:'Gyms & Fitness',e:'🏋️'},
+  {v:'beauty|hairdresser',l:'Salons & Beauty',e:'💇'},
+  {v:'spa|massage',l:'Spa & Massage',e:'💆'},
+  {s:'Education'},
+  {v:'school',l:'Schools',e:'🏫'},
+  {v:'college|university',l:'Colleges',e:'🎓'},
+  {v:'library',l:'Libraries',e:'📚'},
+  {s:'Shopping'},
+  {v:'supermarket',l:'Supermarkets',e:'🛒'},
+  {v:'clothes|boutique',l:'Clothing',e:'👗'},
+  {v:'electronics',l:'Electronics',e:'📱'},
+  {v:'furniture',l:'Furniture',e:'🛋️'},
+  {v:'jewelry|jewellery',l:'Jewellery',e:'💍'},
+  {v:'car_repair',l:'Car Dealers',e:'🚗'},
+  {s:'Stay & Travel'},
+  {v:'hotel|guest_house|hostel',l:'Hotels',e:'🏨'},
+  {v:'travel_agency',l:'Travel Agencies',e:'✈️'},
+  {s:'Services'},
+  {v:'bank',l:'Banks',e:'🏦'},
+  {v:'atm',l:'ATMs',e:'💳'},
+  {v:'post_office',l:'Post Offices',e:'📮'},
+  {v:'laundry|dry_cleaning',l:'Laundry',e:'👔'},
+  {v:'lawyer|notary',l:'Lawyers',e:'⚖️'},
+  {s:'Entertainment'},
+  {v:'cinema',l:'Cinemas',e:'🎬'},
+  {v:'nightclub',l:'Nightclubs',e:'🎶'},
+  {s:'Other'},
+  {v:'fuel',l:'Petrol Stations',e:'⛽'},
+  {v:'police',l:'Police',e:'🚔'},
 ];
 var selCat={v:'restaurant|cafe',l:'Restaurants & Cafes',e:'🍽️'};
 
 function buildDd(filter){
-    var c=document.getElementById('ddOpts');c.innerHTML='';
-    var fl=(filter||'').toLowerCase();
-    CATS.forEach(function(cat){
-        if(cat.s){if(!fl){var d=document.createElement('div');d.className='dd-sec';d.textContent=cat.s;c.appendChild(d);}return;}
-        if(fl&&cat.l.toLowerCase().indexOf(fl)===-1)return;
-        var o=document.createElement('div');
-        o.className='dd-opt'+(cat.v===selCat.v?' active':'');
-        o.innerHTML='<span>'+cat.e+'</span>'+cat.l;
-        o.onclick=(function(cc){return function(){selCat=cc;document.getElementById('ddTxt').textContent=cc.e+' '+cc.l;document.getElementById('catVal').value=cc.v;document.getElementById('catDd').classList.remove('open');buildDd('');};})(cat);
-        c.appendChild(o);
-    });
+  var c=document.getElementById('ddOpts');c.innerHTML='';
+  var fl=(filter||'').toLowerCase();
+  CATS.forEach(function(cat){
+    if(cat.s){if(!fl){var d=document.createElement('div');d.className='dd-sec';d.textContent=cat.s;c.appendChild(d);}return;}
+    if(fl&&cat.l.toLowerCase().indexOf(fl)===-1)return;
+    var o=document.createElement('div');
+    o.className='dd-opt'+(cat.v===selCat.v?' active':'');
+    o.innerHTML='<span>'+cat.e+'</span>'+cat.l;
+    o.onclick=(function(cc){return function(){
+      selCat=cc;
+      document.getElementById('ddTxt').textContent=cc.e+' '+cc.l;
+      document.getElementById('catVal').value=cc.v;
+      document.getElementById('catDd').classList.remove('open');
+      buildDd('');
+    };})(cat);
+    c.appendChild(o);
+  });
 }
 function toggleDd(){var d=document.getElementById('catDd');d.classList.toggle('open');if(d.classList.contains('open')){document.getElementById('ddSi').value='';document.getElementById('ddSi').focus();buildDd('');}}
 function filterDd(v){buildDd(v);}
-document.addEventListener('click',function(e){var d=document.getElementById('catDd');if(!d.contains(e.target))d.classList.remove('open');});
+document.addEventListener('click',function(e){var d=document.getElementById('catDd');if(d&&!d.contains(e.target))d.classList.remove('open');});
 buildDd('');
 
-// ===========================
-// STATE
-// ===========================
-var allR=[];
-var sentLog=[];
+// ============================================================
+// PAGE SWITCH
+// ============================================================
+function showPage(page){
+  var f=page==='finder';
+  document.getElementById('finderPage').style.display=f?'block':'none';
+  document.getElementById('importPage').style.display=f?'none':'block';
+  document.getElementById('navFinder').classList.toggle('active',f);
+  document.getElementById('navImport').classList.toggle('active',!f);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 
-// ===========================
-// XHR (works from file://)
-// ===========================
+// ============================================================
+// DAILY COUNTER
+// ============================================================
+var DLIMIT=300;
+function todayKey(){return new Date().toISOString().slice(0,10);}
+function getDC(){
+  if(localStorage.getItem('df_dd')!==todayKey()){localStorage.setItem('df_dd',todayKey());localStorage.setItem('df_dc','0');}
+  return parseInt(localStorage.getItem('df_dc')||'0',10);
+}
+function incDC(n){
+  var v=getDC()+(n||1);
+  localStorage.setItem('df_dc',String(v));
+  updateDBar();return v;
+}
+function resetDaily(){localStorage.setItem('df_dc','0');updateDBar();}
+function canSend(){return getDC()<DLIMIT;}
+function remToday(){return Math.max(0,DLIMIT-getDC());}
+function updateDBar(){
+  var c=getDC(),pct=Math.min(100,Math.round(c/DLIMIT*100)),rem=DLIMIT-c;
+  document.getElementById('dailySent').textContent=c;
+  var f=document.getElementById('dailyFill');
+  f.style.width=pct+'%';
+  f.style.background=pct>=90?'var(--err)':pct>=60?'var(--warn)':'var(--ag)';
+  document.getElementById('dailyRem').textContent=(rem>0?rem+' remaining today':'⚠️ Daily limit reached')+' — resets at midnight';
+}
+updateDBar();
+
+// ============================================================
+// BATCH HELPER
+// ============================================================
+function setBatch(el,n,hidId,noteId){
+  el.closest('.btabs').querySelectorAll('.btab').forEach(function(b){b.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById(hidId).value=n;
+  document.getElementById(noteId).textContent=n>=999999?'Sends all at once':'Sends '+n+' at a time';
+}
+
+// ============================================================
+// XHR HELPER
+// ============================================================
 function xfetch(url,opts){
-    opts=opts||{};
-    return new Promise(function(res,rej){
-        var x=new XMLHttpRequest();
-        x.open(opts.method||'GET',url,true);
-        if(opts.headers)for(var k in opts.headers)x.setRequestHeader(k,opts.headers[k]);
-        x.onload=function(){
-            if(x.status>=200&&x.status<300){
-                res({ok:true,status:x.status,text:x.responseText,json:function(){return Promise.resolve(JSON.parse(x.responseText));}});
-            }else{
-                res({ok:false,status:x.status,text:x.responseText});
-            }
-        };
-        x.onerror=function(){rej(new Error('Network error. Check internet.'));};
-        x.timeout=90000;
-        x.ontimeout=function(){rej(new Error('Timed out. Try a smaller area.'));};
-        x.send(opts.body||null);
-    });
+  opts=opts||{};
+  return new Promise(function(res,rej){
+    var x=new XMLHttpRequest();
+    x.open(opts.method||'GET',url,true);
+    if(opts.headers)for(var k in opts.headers)x.setRequestHeader(k,opts.headers[k]);
+    x.onload=function(){
+      if(x.status>=200&&x.status<300)res({ok:true,status:x.status,text:x.responseText,json:function(){return Promise.resolve(JSON.parse(x.responseText));}});
+      else res({ok:false,status:x.status,text:x.responseText});
+    };
+    x.onerror=function(){rej(new Error('Network error.'));};
+    x.timeout=90000;
+    x.ontimeout=function(){rej(new Error('Timed out.'));};
+    x.send(opts.body||null);
+  });
 }
 
-// ===========================
+// ============================================================
 // GEOCODE
-// ===========================
+// ============================================================
 async function geocode(name){
-    var r=await xfetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(name)+'&limit=1');
-    var d=await r.json();
-    if(!d.length)throw new Error('Location not found: "'+name+'"');
-    var p=d[0];
-    if(p.boundingbox)return{t:'bbox',s:+p.boundingbox[0],n:+p.boundingbox[1],w:+p.boundingbox[2],e:+p.boundingbox[3]};
-    return{t:'center',lat:+p.lat,lon:+p.lon};
+  var r=await xfetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(name)+'&limit=1');
+  var d=await r.json();
+  if(!d.length)throw new Error('Location not found: "'+name+'"');
+  var p=d[0];
+  if(p.boundingbox)return{t:'bbox',s:+p.boundingbox[0],n:+p.boundingbox[1],w:+p.boundingbox[2],e:+p.boundingbox[3]};
+  return{t:'center',lat:+p.lat,lon:+p.lon};
 }
 
-// ===========================
-// OVERPASS QUERY
-// ===========================
+// ============================================================
+// OVERPASS
+// ============================================================
 function buildQ(geo,catv){
-    var types=catv.split('|');
-    var area=geo.t==='bbox'?'('+geo.s+','+geo.w+','+geo.n+','+geo.e+')':'(around:10000,'+geo.lat+','+geo.lon+')';
-    var q='';
-    var shops=['supermarket','clothes','boutique','electronics','furniture','jewelry','jewellery','car_repair'];
-    var leisure=['gym','fitness_centre','spa','massage','amusement_arcade','theme_park'];
-    var tourism=['hotel','guest_house','hostel'];
-    for(var i=0;i<types.length;i++){
-        var t=types[i].trim();
-        q+='node["amenity"="'+t+'"]'+area+';way["amenity"="'+t+'"]'+area+';';
-        if(shops.indexOf(t)!==-1)q+='node["shop"="'+t+'"]'+area+';way["shop"="'+t+'"]'+area+';';
-        if(leisure.indexOf(t)!==-1)q+='node["leisure"="'+t+'"]'+area+';way["leisure"="'+t+'"]'+area+';';
-        if(tourism.indexOf(t)!==-1)q+='node["tourism"="'+t+'"]'+area+';way["tourism"="'+t+'"]'+area+';';
-    }
-    return '[out:json][timeout:60];('+q+');out body center 500;';
+  var types=catv.split('|');
+  var area=geo.t==='bbox'?'('+geo.s+','+geo.w+','+geo.n+','+geo.e+')':'(around:10000,'+geo.lat+','+geo.lon+')';
+  var q='';
+  for(var i=0;i<types.length;i++){
+    var t=types[i].trim();
+    q+='node["amenity"="'+t+'"]'+area+';way["amenity"="'+t+'"]'+area+';';
+    q+='node["shop"="'+t+'"]'+area+';way["shop"="'+t+'"]'+area+';';
+    q+='node["tourism"="'+t+'"]'+area+';way["tourism"="'+t+'"]'+area+';';
+    q+='node["leisure"="'+t+'"]'+area+';way["leisure"="'+t+'"]'+area+';';
+  }
+  return '[out:json][timeout:60];('+q+');out body center 500;';
 }
 var EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
 async function runQ(q){
-    var err=null;
-    for(var i=0;i<EPS.length;i++){
-        try{
-            showSt('loading','Querying server '+(i+1)+'...');
-            var r=await xfetch(EPS[i],{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});
-            if(r.ok)return await r.json();
-            err=new Error('Server error '+r.status);
-        }catch(e){err=e;}
-    }
-    throw err||new Error('All servers failed.');
+  var err=null;
+  for(var i=0;i<EPS.length;i++){
+    try{
+      showSt('loading','Querying server '+(i+1)+'...');
+      var r=await xfetch(EPS[i],{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+      if(r.ok)return await r.json();
+      err=new Error('Server error '+r.status);
+    }catch(e){err=e;}
+  }
+  throw err||new Error('All servers failed.');
 }
 
-// ===========================
+// ============================================================
 // EXTRACT HELPERS
-// ===========================
+// ============================================================
 function exIG(tags){
-    var raw=tags['contact:instagram']||tags['instagram']||'';
-    if(raw){
-        raw=raw.trim();
-        if(raw.indexOf('instagram.com')!==-1){var m=raw.match(/instagram\.com\/([a-zA-Z0-9_.]{1,30})/);return m?m[1]:'';}
-        if(raw.indexOf('http')===-1&&raw.match(/^@?[a-zA-Z0-9_.]{1,30}$/))return raw.replace(/^@/,'');
-        return '';
-    }
-    var w=tags.website||tags['contact:website']||'';
-    if(w&&w.indexOf('instagram.com/')!==-1){var m2=w.match(/instagram\.com\/([a-zA-Z0-9_.]{1,30})/);return m2?m2[1]:'';}
-    return '';
+  var raw=tags['contact:instagram']||tags['instagram']||'';
+  if(raw){raw=raw.trim();if(raw.indexOf('instagram.com')!==-1){var m=raw.match(/instagram\.com\/([a-zA-Z0-9_.]{1,30})/);return m?m[1]:'';}if(!raw.match(/^https?/)&&raw.match(/^@?[a-zA-Z0-9_.]{1,30}$/))return raw.replace(/^@/,'');}
+  var w=tags.website||tags['contact:website']||'';
+  if(w&&w.indexOf('instagram.com/')!==-1){var m2=w.match(/instagram\.com\/([a-zA-Z0-9_.]{1,30})/);return m2?m2[1]:'';}
+  return '';
 }
 function exEmail(tags){return tags.email||tags['contact:email']||'';}
 function cleanPh(raw){if(!raw)return '';return raw.split(/[;,]/).map(function(p){return p.trim();}).filter(Boolean).join(', ');}
 function ph2wa(phone){if(!phone)return '';var f=phone.split(',')[0].trim();var d=f.replace(/[^\d+]/g,'');if(!d)return '';return d.replace(/^\+/,'');}
 
-// ===========================
+// ============================================================
 // SEARCH
-// ===========================
+// ============================================================
+var allR=[];
 async function startSearch(){
-    var area=document.getElementById('areaInput').value.trim();
-    var catv=document.getElementById('catVal').value;
-    if(!area){showSt('error','Please enter a location.');return;}
-    allR=[];
-    document.getElementById('rBody').innerHTML='';
-    document.getElementById('resultsArea').style.display='none';
-    document.getElementById('statsRow').style.display='none';
-    document.getElementById('emptyState').style.display='none';
-    document.getElementById('campaignSection').style.display='none';
-    document.getElementById('emailSetupSection').style.display='none';
-    document.getElementById('logSection').style.display='none';
-    document.getElementById('logList').innerHTML='';
-    document.getElementById('searchBtn').disabled=true;
-    document.querySelectorAll('.ftab').forEach(function(t){t.classList.remove('active');});
-    document.querySelector('.ftab').classList.add('active');
-    try{
-        showSt('loading','Locating "'+area+'"...');
-        var geo=await geocode(area);
-        showSt('loading','Searching... (10–30 seconds)');
-        var q=buildQ(geo,catv);
-        var data=await runQ(q);
-        if(!data.elements||!data.elements.length){showSt('info','No results found. Try a broader location or different category.');document.getElementById('emptyState').style.display='block';document.getElementById('searchBtn').disabled=false;return;}
-        showSt('loading','Processing '+data.elements.length+' places...');
-        var seen={};
-        for(var i=0;i<data.elements.length;i++){
-            var el=data.elements[i];
-            var tags=el.tags||{};
-            var name=tags.name||tags['name:en']||'';
-            if(!name)continue;
-            var lat=el.lat||(el.center&&el.center.lat)||0;
-            var lon=el.lon||(el.center&&el.center.lon)||0;
-            var dk=name.toLowerCase().replace(/\s+/g,'')+'_'+lat.toFixed(3)+'_'+lon.toFixed(3);
-            if(seen[dk])continue;
-            seen[dk]=true;
-            var phone=cleanPh(tags.phone||tags['contact:phone']||tags['phone:mobile']||tags['contact:mobile']||'');
-            var email=exEmail(tags);
-            var ig=exIG(tags);
-            var web=tags.website||tags['contact:website']||'';
-            if(!phone&&!email&&!web)continue;
-            allR.push({name:name,phone:phone,email:email,ig:ig,web:web,type:tags.amenity||tags.shop||tags.tourism||tags.leisure||'other',addr:[tags['addr:housenumber'],tags['addr:street'],tags['addr:city']].filter(Boolean).join(', '),sent:{wa:false,em:false}});
-        }
-        allR.sort(function(a,b){var as=(a.phone?4:0)+(a.email?2:0)+(a.ig?3:0)+(a.web?1:0);var bs=(b.phone?4:0)+(b.email?2:0)+(b.ig?3:0)+(b.web?1:0);return bs!==as?bs-as:a.name.localeCompare(b.name);});
-        renderR(allR);
-        updateStats();
-        showCampaign();
-        var wp=allR.filter(function(r){return r.phone;}).length;
-        var we=allR.filter(function(r){return r.email;}).length;
-        showSt('success','Found '+allR.length+' places — '+wp+' phone, '+we+' email.');
-    }catch(err){showSt('error',err.message);document.getElementById('emptyState').style.display='block';}
-    document.getElementById('searchBtn').disabled=false;
-}
-
-// ===========================
-// RENDER
-// ===========================
-function renderR(data){
-    var body=document.getElementById('rBody');
-    body.innerHTML='';
-    data.forEach(function(e,i){
-        var tr=document.createElement('tr');
-        tr.id='row-'+i;
-        tr.style.animationDelay=Math.min(i,30)*0.025+'s';
-        if(e.sent&&(e.sent.wa||e.sent.em))tr.classList.add('row-sent');
-        // Phone
-        var ph=e.phone?('<td class="tph"><a href="tel:'+e.phone.split(',')[0].trim()+'">'+esc(e.phone)+'</a>'+(ph2wa(e.phone)?'<a class="wa-btn" href="https://wa.me/'+ph2wa(e.phone)+'" target="_blank" rel="noopener" title="Chat on WhatsApp"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.963 7.963 0 01-4.113-1.14l-.287-.172-2.6.772.772-2.6-.172-.287A7.963 7.963 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/></svg></a>':'')+'</td>'):'<td class="te">—</td>';
-        // Email
-        var em=e.email?('<td class="tem"><a href="mailto:'+esc(e.email)+'">'+esc(e.email)+'</a></td>'):'<td class="te">—</td>';
-        // IG
-        var ig=e.ig?('<td class="tig"><a href="https://instagram.com/'+encodeURIComponent(e.ig)+'" target="_blank"><span class="ig-ico">IG</span> @'+esc(e.ig)+'</a></td>'):'<td class="te">—</td>';
-        // Type
-        var tc=e.type.replace('pub','bar').replace('clinic','hospital').replace('fitness_centre','gym').replace('guest_house','hotel').replace('hostel','hotel');
-        // Web
-        var su=e.web?(e.web.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'')):'';
-        if(su.length>22)su=su.substring(0,22)+'...';
-        var wb=e.web?('<td class="twb"><a href="'+esc(e.web)+'" target="_blank">'+esc(su)+' ↗</a></td>'):'<td class="te">—</td>';
-        // Status
-        var statusHtml='<td>';
-        if(e.sent&&e.sent.wa)statusHtml+='<span class="sent-tick">✅ WA</span>';
-        if(e.sent&&e.sent.em)statusHtml+='<span class="sent-tick">✅ Email</span>';
-        if(!e.sent||(!e.sent.wa&&!e.sent.em))statusHtml+='<span class="te">—</span>';
-        statusHtml+='</td>';
-        tr.innerHTML='<td class="ti">'+(i+1)+'</td><td class="tn">'+esc(e.name)+(e.addr?'<div class="ns">📍 '+esc(e.addr)+'</div>':'')+'</td>'+ph+em+ig+'<td><span class="tb t-'+tc+'">'+e.type.replace(/_/g,' ')+'</span></td>'+wb+statusHtml;
-        body.appendChild(tr);
-    });
-    document.getElementById('resultsArea').style.display=data.length?'block':'none';
-    document.getElementById('rCount').textContent=data.length;
-    document.getElementById('emptyState').style.display=data.length?'none':'block';
-}
-function updateStats(){
+  var area=document.getElementById('areaInput').value.trim();
+  var catv=document.getElementById('catVal').value;
+  if(!area){showSt('error','Please enter a location.');return;}
+  allR=[];
+  document.getElementById('rBody').innerHTML='';
+  document.getElementById('resultsArea').style.display='none';
+  document.getElementById('statsRow').style.display='none';
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('campaignSection').style.display='none';
+  document.getElementById('logSection').style.display='none';
+  document.getElementById('logList').innerHTML='';
+  document.getElementById('searchBtn').disabled=true;
+  document.querySelectorAll('.ftab').forEach(function(t){t.classList.remove('active');});
+  document.querySelector('.ftab').classList.add('active');
+  try{
+    showSt('loading','Locating "'+area+'"...');
+    var geo=await geocode(area);
+    showSt('loading','Searching...');
+    var q=buildQ(geo,catv);
+    var data=await runQ(q);
+    if(!data.elements||!data.elements.length){showSt('info','No results. Try broader area or different category.');document.getElementById('emptyState').style.display='block';document.getElementById('searchBtn').disabled=false;return;}
+    showSt('loading','Processing '+data.elements.length+' places...');
+    var seen={};
+    for(var i=0;i<data.elements.length;i++){
+      var el=data.elements[i];var tags=el.tags||{};var name=tags.name||tags['name:en']||'';
+      if(!name)continue;
+      var lat=el.lat||(el.center&&el.center.lat)||0;var lon=el.lon||(el.center&&el.center.lon)||0;
+      var dk=name.toLowerCase().replace(/\s+/g,'')+'_'+lat.toFixed(3)+'_'+lon.toFixed(3);
+      if(seen[dk])continue;seen[dk]=true;
+      var phone=cleanPh(tags.phone||tags['contact:phone']||tags['phone:mobile']||tags['contact:mobile']||'');
+      var email=exEmail(tags);var ig=exIG(tags);var web=tags.website||tags['contact:website']||'';
+      if(!phone&&!email&&!web)continue;
+      allR.push({name:name,phone:phone,email:email,ig:ig,web:web,type:tags.amenity||tags.shop||tags.tourism||tags.leisure||'other',addr:[tags['addr:housenumber'],tags['addr:street'],tags['addr:city']].filter(Boolean).join(', '),sent:{wa:false,em:false}});
+    }
+    allR.sort(function(a,b){var as=(a.phone?4:0)+(a.email?2:0)+(a.ig?3:0)+(a.web?1:0);var bs=(b.phone?4:0)+(b.email?2:0)+(b.ig?3:0)+(b.web?1:0);return bs!==as?bs-as:a.name.localeCompare(b.name);});
+    renderR(allR);
     document.getElementById('statsRow').style.display='grid';
     document.getElementById('stTotal').textContent=allR.length;
     document.getElementById('stPhone').textContent=allR.filter(function(r){return r.phone;}).length;
     document.getElementById('stEmail').textContent=allR.filter(function(r){return r.email;}).length;
     document.getElementById('stInsta').textContent=allR.filter(function(r){return r.ig;}).length;
     document.getElementById('stWeb').textContent=allR.filter(function(r){return r.web;}).length;
-}
-function filterR(tab,f){
-    document.querySelectorAll('.ftab').forEach(function(t){t.classList.remove('active');});
-    tab.classList.add('active');
-    var fd=allR;
-    if(f==='phone')fd=allR.filter(function(r){return r.phone;});
-    else if(f==='email')fd=allR.filter(function(r){return r.email;});
-    else if(f==='instagram')fd=allR.filter(function(r){return r.ig;});
-    else if(f==='whatsapp')fd=allR.filter(function(r){return r.phone&&ph2wa(r.phone);});
-    renderR(fd);
-}
-
-// ===========================
-// CAMPAIGN
-// ===========================
-function showCampaign(){
     document.getElementById('mcWa').textContent=allR.filter(function(r){return r.phone&&ph2wa(r.phone);}).length;
     document.getElementById('mcEm').textContent=allR.filter(function(r){return r.email;}).length;
     document.getElementById('campaignSection').style.display='block';
-    document.getElementById('emailSetupSection').style.display='block';
-    loadEmailSetup();
+    showSt('success','Found '+allR.length+' places.');
+  }catch(err){showSt('error',err.message);document.getElementById('emptyState').style.display='block';}
+  document.getElementById('searchBtn').disabled=false;
 }
 
-// ===========================
+function renderR(data){
+  var body=document.getElementById('rBody');body.innerHTML='';
+  data.forEach(function(e,i){
+    var tr=document.createElement('tr');
+    tr.id='row-'+i;
+    tr.style.animationDelay=Math.min(i,30)*0.025+'s';
+    if(e.sent&&(e.sent.wa||e.sent.em))tr.classList.add('row-sent');
+    var ph='';
+    if(e.phone){
+      ph='<td class="tph"><a href="tel:'+e.phone.split(',')[0].trim()+'">'+esc(e.phone)+'</a>';
+      var wa=ph2wa(e.phone);
+      if(wa)ph+='<a class="wa-btn" href="https://wa.me/'+wa+'" target="_blank"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.963 7.963 0 01-4.113-1.14l-.287-.172-2.6.772.772-2.6-.172-.287A7.963 7.963 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/></svg></a>';
+      ph+='</td>';
+    }else ph='<td class="te">—</td>';
+    var em=e.email?'<td class="tem"><a href="mailto:'+esc(e.email)+'">'+esc(e.email)+'</a></td>':'<td class="te">—</td>';
+    var ig=e.ig?'<td class="tig"><a href="https://instagram.com/'+encodeURIComponent(e.ig)+'" target="_blank"><span class="ig-ico">IG</span> @'+esc(e.ig)+'</a></td>':'<td class="te">—</td>';
+    var tc=e.type.replace('pub','bar').replace('clinic','hospital').replace('fitness_centre','gym').replace('guest_house','hotel').replace('hostel','hotel');
+    var su=e.web?(e.web.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'').substring(0,20)+'...'):'';
+    var wb=e.web?'<td class="twb"><a href="'+esc(e.web)+'" target="_blank">'+esc(su)+' ↗</a></td>':'<td class="te">—</td>';
+    var st='<td>';
+    if(e.sent&&e.sent.wa)st+='<span class="sent-tick">✅WA</span>';
+    if(e.sent&&e.sent.em)st+='<span class="sent-tick">✅Em</span>';
+    if(!e.sent||(!e.sent.wa&&!e.sent.em))st+='<span class="te">—</span>';
+    st+='</td>';
+    tr.innerHTML='<td class="ti">'+(i+1)+'</td><td class="tn">'+esc(e.name)+(e.addr?'<div class="ns">📍'+esc(e.addr)+'</div>':'')+'</td>'+ph+em+ig+'<td><span class="tb t-'+tc+'">'+e.type.replace(/_/g,' ')+'</span></td>'+wb+st;
+    body.appendChild(tr);
+  });
+  document.getElementById('resultsArea').style.display=data.length?'block':'none';
+  document.getElementById('rCount').textContent=data.length;
+  document.getElementById('emptyState').style.display=data.length?'none':'block';
+}
+function filterR(tab,f){
+  document.querySelectorAll('.ftab').forEach(function(t){t.classList.remove('active');});tab.classList.add('active');
+  var fd=allR;
+  if(f==='phone')fd=allR.filter(function(r){return r.phone;});
+  else if(f==='email')fd=allR.filter(function(r){return r.email;});
+  else if(f==='instagram')fd=allR.filter(function(r){return r.ig;});
+  else if(f==='whatsapp')fd=allR.filter(function(r){return r.phone&&ph2wa(r.phone);});
+  renderR(fd);
+}
+
+// ============================================================
 // EMAIL SETUP
-// ===========================
+// ============================================================
 function saveEmailSetup(){
-    var name=document.getElementById('senderName').value.trim();
-    var email=document.getElementById('senderEmail').value.trim();
-    var key=document.getElementById('brevoKey').value.trim();
-    if(!name||!email||!key){alert('Please fill in all three fields.');return;}
-    localStorage.setItem('df_sname',name);
-    localStorage.setItem('df_semail',email);
-    localStorage.setItem('df_bkey',key);
-    document.getElementById('setupSaved').style.display='block';
-    setTimeout(function(){document.getElementById('setupSaved').style.display='none';},4000);
+  var n=document.getElementById('senderName').value.trim();
+  var e=document.getElementById('senderEmail').value.trim();
+  var k=document.getElementById('brevoKey').value.trim();
+  if(!n||!e||!k){alert('Please fill in all three fields.');return;}
+  localStorage.setItem('df_sn',n);localStorage.setItem('df_se',e);localStorage.setItem('df_bk',k);
+  document.getElementById('setupSaved').style.display='block';
+  setTimeout(function(){document.getElementById('setupSaved').style.display='none';},4000);
 }
 function loadEmailSetup(){
-    var n=localStorage.getItem('df_sname')||'';
-    var e=localStorage.getItem('df_semail')||'';
-    var k=localStorage.getItem('df_bkey')||'';
-    document.getElementById('senderName').value=n;
-    document.getElementById('senderEmail').value=e;
-    document.getElementById('brevoKey').value=k;
-    if(n&&e&&k)document.getElementById('setupSaved').style.display='block';
+  var n=localStorage.getItem('df_sn')||'';var e=localStorage.getItem('df_se')||'';var k=localStorage.getItem('df_bk')||'';
+  document.getElementById('senderName').value=n;document.getElementById('senderEmail').value=e;document.getElementById('brevoKey').value=k;
+  if(n&&e&&k)document.getElementById('setupSaved').style.display='block';
 }
 function toggleKey(){var i=document.getElementById('brevoKey');i.type=i.type==='password'?'text':'password';}
+loadEmailSetup();
 
-// ===========================
-// SEND QUEUE (WhatsApp)
-// ===========================
-var sendQ=[];var sendIdx=0;var sendMode='';
-
-function sendAllWA(){
-    var msg=document.getElementById('msgTxt').value.trim();
-    if(!msg){alert('Please type a message first!');return;}
-    sendQ=allR.filter(function(r){return r.phone&&ph2wa(r.phone);});
-    if(!sendQ.length){alert('No WhatsApp numbers found in results.');return;}
-    sendIdx=0;sendMode='wa';openModal();
-}
-
-function openModal(){
-    document.getElementById('overlay').style.display='block';
-    document.getElementById('sendModal').style.display='block';
-    document.getElementById('modalTitle').textContent=sendMode==='wa'?'💬 Sending via WhatsApp':'📧 Sending via Email';
-    document.getElementById('nextBtn').style.display='inline-flex';
-    document.getElementById('doneBtn').style.display='none';
-    document.getElementById('modalNote').textContent=sendMode==='wa'?'💡 Each message opens WhatsApp Web in a new tab. Allow popups if Chrome asks.':'💡 Sending email via Brevo. Each send happens automatically — just click Next.';
-    updateModal();
-}
-function closeModal(){document.getElementById('overlay').style.display='none';document.getElementById('sendModal').style.display='none';sendQ=[];sendIdx=0;}
-function updateModal(){
-    var total=sendQ.length;
-    var cur=sendQ[sendIdx];
-    var pct=Math.round((sendIdx/total)*100);
-    document.getElementById('progFill').style.width=pct+'%';
-    document.getElementById('progTxt').textContent='Contact '+(sendIdx+1)+' of '+total+' — '+(cur?cur.name:'');
-    var msg=document.getElementById('msgTxt').value;
-    var personalised=cur?msg.replace(/\{name\}/gi,cur.name):msg;
-    if(sendMode==='wa'){
-        document.getElementById('previewBox').textContent='📱 To: '+(cur?cur.phone:'')+'\n\n'+personalised;
+// Test email
+async function testEmail(){
+  var key=document.getElementById('brevoKey').value.trim()||localStorage.getItem('df_bk')||'';
+  var sname=document.getElementById('senderName').value.trim()||localStorage.getItem('df_sn')||'';
+  var semail=document.getElementById('senderEmail').value.trim()||localStorage.getItem('df_se')||'';
+  var toEmail=document.getElementById('testToEmail').value.trim();
+  if(!key)return showTR('error','❌ Enter your Brevo API Key first.');
+  if(!sname||!semail)return showTR('error','❌ Enter your Name and Email first.');
+  if(!toEmail)return showTR('error','❌ Enter a test email address.');
+  var btn=document.getElementById('testBtn');btn.disabled=true;btn.textContent='⏳ Sending...';
+  showTR('loading','⏳ Sending to '+toEmail+'...');
+  var payload=JSON.stringify({sender:{name:sname,email:semail},to:[{email:toEmail,name:'Test'}],subject:'✅ Details Finder Test',textContent:'Hello!\n\nThis is a test from Details Finder.\nIf you got this, Brevo is working! ✅\n\nSender: '+sname+' <'+semail+'>'});
+  try{
+    var r=await xfetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'Content-Type':'application/json','api-key':key},body:payload});
+    if(r.ok){
+      showTR('success','✅ Test email sent to '+toEmail+'! Check inbox (also Spam).');
+      btn.textContent='✅ Sent!';btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)';
     }else{
-        var subj=document.getElementById('emailSubj').value||'Hello';
-        document.getElementById('previewBox').textContent='📧 To: '+(cur?cur.email:'')+'\nSubject: '+subj+'\n\n'+personalised;
+      var em='Error '+r.status;try{var ed=JSON.parse(r.text||'{}');em=ed.message||ed.error||em;}catch(pe){}
+      var fix='';
+      if(r.status===401)fix=' → API key wrong/expired. Create new at app.brevo.com.';
+      else if(em.toLowerCase().indexOf('sender')!==-1)fix=' → Sender email not verified. Brevo → Settings → Senders & IPs → verify email.';
+      showTR('error','❌ '+em+(fix?'<br><b>Fix:</b>'+fix:''));
+      btn.textContent='❌ Failed';btn.style.background='linear-gradient(135deg,#ef4444,#dc2626)';
     }
+  }catch(e){showTR('error','❌ Network error: '+e.message);btn.textContent='❌ Error';}
+  setTimeout(function(){btn.disabled=false;btn.textContent='📨 Send Test';btn.style.background='linear-gradient(135deg,#38bdf8,#0284c7)';},5000);
+}
+function showTR(type,msg){
+  var c={success:'var(--ok)',error:'var(--err)',loading:'var(--a1)'};
+  var bg={success:'rgba(34,197,94,.1)',error:'rgba(239,68,68,.1)',loading:'rgba(251,146,60,.1)'};
+  var bc={success:'rgba(34,197,94,.2)',error:'rgba(239,68,68,.2)',loading:'rgba(251,146,60,.2)'};
+  document.getElementById('testResult').innerHTML='<div style="font-size:.8rem;font-weight:500;color:'+c[type]+';padding:8px 12px;background:'+bg[type]+';border-radius:6px;border:1px solid '+bc[type]+'">'+msg+'</div>';
+}
+
+// ============================================================
+// CAMPAIGN (WhatsApp)
+// ============================================================
+var sendQ=[];var sendIdx=0;var sendMode='';
+function sendAllWA(){
+  var msg=document.getElementById('msgTxt').value.trim();
+  if(!msg){alert('Please type a message first!');return;}
+  sendQ=allR.filter(function(r){return r.phone&&ph2wa(r.phone);});
+  if(!sendQ.length){alert('No WhatsApp numbers found.');return;}
+  sendIdx=0;sendMode='wa';openModal();
+}
+function sendAllEmail(){
+  var msg=document.getElementById('msgTxt').value.trim();
+  if(!msg){alert('Please type a message first!');return;}
+  var key=localStorage.getItem('df_bk')||'';var sn=localStorage.getItem('df_sn')||'';var se=localStorage.getItem('df_se')||'';
+  if(!key||!sn||!se){alert('Please fill in Email Sender Setup below first.');document.getElementById('senderName').scrollIntoView({behavior:'smooth'});return;}
+  if(!canSend()){alert('⚠️ Daily limit of 300 reached. Resets at midnight.');return;}
+  sendQ=allR.filter(function(r){return r.email;});
+  if(!sendQ.length){alert('No email addresses found.');return;}
+  var batch=parseInt(document.getElementById('finderBatch').value,10)||50;
+  var rem=remToday();
+  sendQ=sendQ.slice(0,Math.min(batch,rem));
+  sendIdx=0;sendMode='email';openModal();
+}
+function openModal(){
+  document.getElementById('overlay').style.display='block';
+  document.getElementById('sendModal').style.display='block';
+  document.getElementById('modalTitle').textContent=sendMode==='wa'?'💬 WhatsApp Campaign':'📧 Email Campaign';
+  document.getElementById('nextBtn').style.display='inline-flex';
+  document.getElementById('doneBtn').style.display='none';
+  document.getElementById('modalNote').textContent=sendMode==='wa'?'💡 Each opens WhatsApp in new tab. Allow popups in Chrome.':'💡 Emails sent via Brevo API automatically.';
+  updateModal();
+}
+function closeModal(){document.getElementById('overlay').style.display='none';document.getElementById('sendModal').style.display='none';}
+function updateModal(){
+  var total=sendQ.length;var cur=sendQ[sendIdx];var pct=Math.round((sendIdx/total)*100);
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('progTxt').textContent='Contact '+(sendIdx+1)+' of '+total+(cur?' — '+cur.name:'');
+  var msg=document.getElementById('msgTxt').value;
+  var p=cur?msg.replace(/\{name\}/gi,cur.name):msg;
+  document.getElementById('previewBox').textContent=sendMode==='wa'?('📱 To: '+(cur?cur.phone:'')+'\n\n'+p):('📧 To: '+(cur?cur.email:'')+'\n'+p);
 }
 function sendNext(){
-    if(sendIdx>=sendQ.length){finishSend();return;}
-    var entry=sendQ[sendIdx];
-    var msg=document.getElementById('msgTxt').value;
-    var personalised=msg.replace(/\{name\}/gi,entry.name);
-    if(sendMode==='wa'){
-        var waNum=ph2wa(entry.phone);
-        window.open('https://wa.me/'+waNum+'?text='+encodeURIComponent(personalised),'_blank');
-        // Mark sent
-        for(var i=0;i<allR.length;i++){if(allR[i].name===entry.name){allR[i].sent.wa=true;break;}}
-        addLog(entry.name,'wa');
-    }else{
-        // Email via Brevo API
-        sendBrevoEmail(entry,personalised);
-    }
-    sendIdx++;
-    if(sendIdx>=sendQ.length){finishSend();}else{updateModal();}
+  if(sendIdx>=sendQ.length){finishSend();return;}
+  var entry=sendQ[sendIdx];
+  var msg=document.getElementById('msgTxt').value;
+  var p=msg.replace(/\{name\}/gi,entry.name);
+  if(sendMode==='wa'){
+    window.open('https://wa.me/'+ph2wa(entry.phone)+'?text='+encodeURIComponent(p),'_blank');
+    for(var i=0;i<allR.length;i++){if(allR[i].name===entry.name){allR[i].sent.wa=true;break;}}
+    addLog(entry.name,'wa',false,'Sent');
+  }else{
+    sendBrevoEmail(entry,p);
+  }
+  sendIdx++;
+  if(sendIdx>=sendQ.length)finishSend();else updateModal();
 }
 function skipContact(){sendIdx++;if(sendIdx>=sendQ.length){finishSend();return;}updateModal();}
 function finishSend(){
-    document.getElementById('progFill').style.width='100%';
-    document.getElementById('progTxt').textContent='✅ All done! Processed '+sendQ.length+' contacts.';
-    document.getElementById('previewBox').textContent='Campaign completed!';
-    document.getElementById('nextBtn').style.display='none';
-    document.getElementById('doneBtn').style.display='inline-flex';
-    renderR(allR);// refresh to show ticks
+  document.getElementById('progFill').style.width='100%';
+  document.getElementById('progTxt').textContent='✅ All done! '+sendQ.length+' contacts processed.';
+  document.getElementById('previewBox').textContent='Campaign completed!';
+  document.getElementById('nextBtn').style.display='none';
+  document.getElementById('doneBtn').style.display='inline-flex';
+  renderR(allR);
 }
-
-// ===========================
-// BREVO EMAIL SEND
-// ===========================
-function sendAllEmail(){
-    var msg=document.getElementById('msgTxt').value.trim();
-    if(!msg){alert('Please type a message first!');return;}
-    var key=localStorage.getItem('df_bkey')||'';
-    var sname=localStorage.getItem('df_sname')||'';
-    var semail=localStorage.getItem('df_semail')||'';
-    if(!key||!sname||!semail){
-        alert('Please fill in the Email Sender Setup below first (Brevo API Key, your name and email).');
-        document.getElementById('emailSetupSection').scrollIntoView({behavior:'smooth'});
-        return;
-    }
-    sendQ=allR.filter(function(r){return r.email;});
-    if(!sendQ.length){alert('No email addresses found in results.');return;}
-    sendIdx=0;sendMode='email';openModal();
-}
-
 async function sendBrevoEmail(entry,personalised){
-    var key=localStorage.getItem('df_bkey')||'';
-    var sname=localStorage.getItem('df_sname')||'';
-    var semail=localStorage.getItem('df_semail')||'';
-    var subj=document.getElementById('emailSubj').value||'Hello';
-    if(!canSendMore()){addLog(entry.name,'em',true,'Daily limit of 300 reached. Resets at midnight.');return;}
-    var payload=JSON.stringify({
-        sender:{name:sname,email:semail},
-        to:[{email:entry.email,name:entry.name}],
-        subject:subj,
-        textContent:personalised
-    });
-    try{
-        var r=await xfetch('https://api.brevo.com/v3/smtp/email',{
-            method:'POST',
-            headers:{'Content-Type':'application/json','api-key':key},
-            body:payload
-        });
-        if(r.ok){
-            for(var i=0;i<allR.length;i++){if(allR[i].name===entry.name){allR[i].sent.em=true;break;}}
-            addDailyCount(1);
-            addLog(entry.name,'em',false,'Sent successfully');
-        }else{
-            // Parse real error from Brevo
-            var errMsg='Unknown error (status '+r.status+')';
-            try{
-                var errData=JSON.parse(r.text||'{}');
-                errMsg=errData.message||errData.error||errMsg;
-            }catch(pe){}
-            addLog(entry.name,'em',true,errMsg);
-        }
-    }catch(e){addLog(entry.name,'em',true,'Network error: '+e.message);}
+  var key=localStorage.getItem('df_bk')||'';var sn=localStorage.getItem('df_sn')||'';var se=localStorage.getItem('df_se')||'';
+  var subj=document.getElementById('emailSubj').value||'Hello';
+  if(!canSend()){addLog(entry.name,'em',true,'Daily limit reached');return;}
+  var payload=JSON.stringify({sender:{name:sn,email:se},to:[{email:entry.email,name:entry.name}],subject:subj,textContent:personalised});
+  try{
+    var r=await xfetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'Content-Type':'application/json','api-key':key},body:payload});
+    if(r.ok){for(var i=0;i<allR.length;i++){if(allR[i].name===entry.name){allR[i].sent.em=true;break;}}incDC(1);addLog(entry.name,'em',false,'Sent ✅');}
+    else{var em='Error';try{var ed=JSON.parse(r.text||'{}');em=ed.message||ed.error||('Status '+r.status);}catch(pe){}addLog(entry.name,'em',true,em);}
+  }catch(e){addLog(entry.name,'em',true,'Network: '+e.message);}
 }
 
-// Test single email to any address
-async function testBrevoEmail(){
-    var key=document.getElementById('brevoKey').value.trim()||localStorage.getItem('df_bkey')||'';
-    var sname=document.getElementById('senderName').value.trim()||localStorage.getItem('df_sname')||'';
-    var semail=document.getElementById('senderEmail').value.trim()||localStorage.getItem('df_semail')||'';
-    var toEmail=document.getElementById('testToEmail').value.trim();
-    if(!key){showTestResult('error','❌ Please enter your Brevo API Key above.');return;}
-    if(!sname||!semail){showTestResult('error','❌ Please enter your Name and Email above.');return;}
-    if(!toEmail){showTestResult('error','❌ Please enter a test email address to send to.');return;}
-    var btn=document.getElementById('testEmailBtn');
-    btn.disabled=true;btn.textContent='⏳ Sending...';
-    showTestResult('loading','⏳ Sending test email to '+toEmail+'...');
-    var payload=JSON.stringify({
-        sender:{name:sname,email:semail},
-        to:[{email:toEmail,name:'Test'}],
-        subject:'✅ Details Finder — Email Test',
-        textContent:'Hello!\n\nThis is a test email from Details Finder.\n\nIf you received this, your Brevo email setup is working correctly! ✅\n\nSender Name: '+sname+'\nSender Email: '+semail+'\n\n— Details Finder by Chetan Hegde'
-    });
-    try{
-        var r=await xfetch('https://api.brevo.com/v3/smtp/email',{
-            method:'POST',
-            headers:{'Content-Type':'application/json','api-key':key},
-            body:payload
-        });
-        if(r.ok){
-            showTestResult('success','✅ Test email sent to '+toEmail+' — Check your inbox! (also check Spam folder)');
-            btn.textContent='✅ Sent!';
-            btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)';
-        }else{
-            var errMsg='Unknown error (Status '+r.status+')';
-            try{
-                var ed=JSON.parse(r.text||'{}');
-                errMsg=ed.message||ed.error||errMsg;
-            }catch(pe){}
-            var fix='';
-            if(r.status===401)fix=' → API key is wrong or expired. Create a new one at app.brevo.com.';
-            else if(errMsg.toLowerCase().indexOf('sender')!==-1)fix=' → Your sender email is NOT verified in Brevo. Go to Brevo → Settings → Senders & IPs → Add Sender → verify it.';
-            else if(errMsg.toLowerCase().indexOf('unauthorized')!==-1||errMsg.toLowerCase().indexOf('forbidden')!==-1)fix=' → API key does not have permission. Make sure you selected all permissions when creating it.';
-            showTestResult('error','❌ '+errMsg+(fix?'<br><strong>Fix:</strong>'+fix:''));
-            btn.textContent='❌ Failed';
-            btn.style.background='linear-gradient(135deg,#ef4444,#dc2626)';
-        }
-    }catch(e){
-        showTestResult('error','❌ Network error: '+e.message);
-        btn.textContent='❌ Error';
-    }
-    setTimeout(function(){btn.disabled=false;btn.textContent='📨 Send Test';btn.style.background='linear-gradient(135deg,#38bdf8,#0284c7)';},5000);
-}
-function showTestResult(type,msg){
-    var el=document.getElementById('testEmailResult');
-    var colors={success:'var(--success)',error:'var(--danger)',loading:'var(--accent-1)'};
-    el.innerHTML='<div style="font-size:.82rem;font-weight:500;color:'+colors[type]+';padding:8px 12px;background:'+
-        (type==='success'?'rgba(34,197,94,.1)':type==='error'?'rgba(239,68,68,.1)':'rgba(251,146,60,.1)')+
-        ';border-radius:var(--radius-sm);border:1px solid '+(type==='success'?'rgba(34,197,94,.2)':type==='error'?'rgba(239,68,68,.2)':'rgba(251,146,60,.2)')+'">'+msg+'</div>';
-}
-
-// ===========================
+// ============================================================
 // SEND LOG
-// ===========================
+// ============================================================
 function addLog(name,type,failed,detail){
-    var now=new Date();
-    var timeStr=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
-    sentLog.push({name:name,type:type,time:timeStr,failed:!!failed,detail:detail||''});
-    var list=document.getElementById('logList');
-    document.getElementById('logSection').style.display='block';
-    var item=document.createElement('div');
-    item.className='log-item';
-    item.style.flexDirection='column';
-    item.style.alignItems='flex-start';
-    var typeLabel=type==='wa'?'💬 WhatsApp':'📧 Email';
-    var typeClass=type==='wa'?'li-wa':'li-em';
-    var tick=failed?'❌':'✅';
-    var detailHtml=detail?'<div style="font-size:.72rem;color:'+(failed?'var(--danger)':'var(--success)')+';margin-top:3px;padding-left:24px">'+esc(detail)+'</div>':'';
-    item.innerHTML='<div style="display:flex;align-items:center;gap:10px;width:100%"><span class="li-tick">'+tick+'</span><span class="li-name">'+esc(name)+'</span><span class="li-type '+typeClass+'">'+typeLabel+'</span><span class="li-time">'+timeStr+'</span></div>'+detailHtml;
-    list.insertBefore(item,list.firstChild);
+  var now=new Date();var ts=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
+  var list=document.getElementById('logList');document.getElementById('logSection').style.display='block';
+  var item=document.createElement('div');item.className='li';
+  var tl=type==='wa'?'💬 WA':'📧 Email';var tc=type==='wa'?'li-wa':'li-em';
+  item.innerHTML='<div class="li-row"><span>'+(failed?'❌':'✅')+'</span><span class="li-name">'+esc(name)+'</span><span class="li-tag '+tc+'">'+tl+'</span><span class="li-time">'+ts+'</span></div>'+(detail?'<div class="li-detail" style="color:'+(failed?'var(--err)':'var(--ok)')+'">'+esc(detail)+'</div>':'');
+  list.insertBefore(item,list.firstChild);
 }
 
-// ===========================
+// ============================================================
 // EXPORT / COPY
-// ===========================
+// ============================================================
 function exportCSV(){
-    if(!allR.length)return;
-    var h=['#','Name','Phone','WhatsApp Link','Email','Instagram','Type','Website','Address','Sent WA','Sent Email'];
-    var rows=allR.map(function(r,i){
-        var wa=ph2wa(r.phone);
-        return[i+1,'"'+(r.name||'').replace(/"/g,'""')+'"','"'+(r.phone||'')+'"',wa?'"https://wa.me/'+wa+'"':'""','"'+(r.email||'')+'"','"'+(r.ig?'@'+r.ig:'')+'"',r.type||'','"'+(r.web||'')+'"','"'+(r.addr||'').replace(/"/g,'""')+'"',r.sent&&r.sent.wa?'Yes':'No',r.sent&&r.sent.em?'Yes':'No'];
-    });
-    var csv='\uFEFF'+h.join(',')+'\n'+rows.map(function(r){return r.join(',');}).join('\n');
-    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');a.href=url;a.download='details_finder_'+new Date().toISOString().slice(0,10)+'.csv';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-    showSt('success','Exported '+allR.length+' results.');
+  if(!allR.length)return;
+  var h=['#','Name','Phone','WhatsApp','Email','Instagram','Type','Website','Address','Sent WA','Sent Email'];
+  var rows=allR.map(function(r,i){var wa=ph2wa(r.phone);return[i+1,'"'+(r.name||'').replace(/"/g,'""')+'"','"'+(r.phone||'')+'"',wa?'"https://wa.me/'+wa+'"':'""','"'+(r.email||'')+'"','"'+(r.ig?'@'+r.ig:'')+'"',r.type||'','"'+(r.web||'')+'"','"'+(r.addr||'').replace(/"/g,'""')+'"',r.sent&&r.sent.wa?'Yes':'No',r.sent&&r.sent.em?'Yes':'No'];});
+  var csv='\uFEFF'+h.join(',')+'\n'+rows.map(function(r){return r.join(',');}).join('\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='details_finder.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  showSt('success','Exported '+allR.length+' results.');
 }
 function copyAll(){
-    if(!allR.length)return;
-    var lines=allR.map(function(r,i){var p=[(i+1)+'. '+r.name];if(r.phone)p.push('📞 '+r.phone);if(r.email)p.push('📧 '+r.email);if(r.ig)p.push('📸 @'+r.ig);if(r.web)p.push('🌐 '+r.web);return p.join(' | ');});
-    var ta=document.createElement('textarea');ta.value=lines.join('\n');ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');showSt('success','Copied!');}catch(e){showSt('error','Copy failed.');}
-    document.body.removeChild(ta);
+  if(!allR.length)return;
+  var lines=allR.map(function(r,i){var p=[(i+1)+'. '+r.name];if(r.phone)p.push('📞 '+r.phone);if(r.email)p.push('📧 '+r.email);if(r.ig)p.push('📸 @'+r.ig);if(r.web)p.push('🌐 '+r.web);return p.join(' | ');});
+  var ta=document.createElement('textarea');ta.value=lines.join('\n');ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');showSt('success','Copied!');}catch(e){showSt('error','Copy failed.');}
+  document.body.removeChild(ta);
 }
 
-// ===========================
-// FAB + SCROLL
-// ===========================
+// ============================================================
+// FLOATING
+// ============================================================
 var fabOpen=false;
 function toggleFab(){fabOpen=!fabOpen;document.getElementById('fabPanel').classList.toggle('open',fabOpen);}
 function doFabSearch(){
-    var a=document.getElementById('fabLoc').value.trim();
-    var c=document.getElementById('fabCat').value.trim();
-    if(a)document.getElementById('areaInput').value=a;
-    if(c){var found=false;CATS.forEach(function(cat){if(!cat.s&&cat.l.toLowerCase().indexOf(c.toLowerCase())!==-1){selCat=cat;document.getElementById('catVal').value=cat.v;document.getElementById('ddTxt').textContent=cat.e+' '+cat.l;found=true;}});if(!found){document.getElementById('catVal').value=c.toLowerCase().replace(/\s+/g,'_');document.getElementById('ddTxt').textContent='🔍 '+c;}}
-    toggleFab();window.scrollTo({top:0,behavior:'smooth'});startSearch();
+  var a=document.getElementById('fabLoc').value.trim();var c=document.getElementById('fabCat').value.trim();
+  if(a)document.getElementById('areaInput').value=a;
+  if(c){CATS.forEach(function(cat){if(!cat.s&&cat.l.toLowerCase().indexOf(c.toLowerCase())!==-1){selCat=cat;document.getElementById('catVal').value=cat.v;document.getElementById('ddTxt').textContent=cat.e+' '+cat.l;}});}
+  toggleFab();window.scrollTo({top:0,behavior:'smooth'});startSearch();
 }
 window.addEventListener('scroll',function(){
-    var y=window.pageYOffset||document.documentElement.scrollTop;
-    document.getElementById('fabBtn').style.display=y>400?'flex':'none';
-    document.getElementById('scrollTop').style.display=y>400?'flex':'none';
-    if(!y&&fabOpen)toggleFab();
+  var y=window.pageYOffset||document.documentElement.scrollTop;
+  document.getElementById('fabBtn').style.display=y>400?'flex':'none';
+  document.getElementById('stbBtn').style.display=y>400?'flex':'none';
+  if(!y&&fabOpen)toggleFab();
 });
 
-// ===========================
+// ============================================================
 // HELPERS
-// ===========================
+// ============================================================
 function showSt(type,msg){
-    var bar=document.getElementById('statusBar');
-    bar.className='sb '+type;
-    document.getElementById('statusTxt').textContent=msg;
-    if(type!=='loading')setTimeout(function(){bar.className='sb';},8000);
+  var bar=document.getElementById('statusBar');bar.className='sb '+type;
+  document.getElementById('statusTxt').textContent=msg;
+  if(type!=='loading')setTimeout(function(){bar.className='sb';},8000);
 }
 function esc(s){if(!s)return '';var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
-
 document.getElementById('areaInput').addEventListener('keydown',function(e){if(e.key==='Enter')startSearch();});
 document.getElementById('msgTxt').addEventListener('input',function(){document.getElementById('charCt').textContent=this.value.length;});
 
-// ===========================
-// PAGE SWITCHING
-// ===========================
-function showPage(page){
-    var isFinder=page==='finder';
-    document.getElementById('finderPage').style.display=isFinder?'block':'none';
-    document.getElementById('importPage').style.display=isFinder?'none':'block';
-    document.getElementById('navFinder').classList.toggle('active',isFinder);
-    document.getElementById('navImport').classList.toggle('active',!isFinder);
-    window.scrollTo({top:0,behavior:'smooth'});
-}
+// ============================================================
+// IMPORT PAGE
+// ============================================================
+var impData=[];var rawHeaders=[];var rawRows=[];
 
-// ===========================
-// DAILY EMAIL COUNTER
-// ===========================
-var DAILY_LIMIT=300;
-function getTodayKey(){return new Date().toISOString().slice(0,10);}
-function getDailyCount(){
-    var stored=localStorage.getItem('df_daily_date');
-    if(stored!==getTodayKey()){localStorage.setItem('df_daily_date',getTodayKey());localStorage.setItem('df_daily_count','0');return 0;}
-    return parseInt(localStorage.getItem('df_daily_count')||'0',10);
-}
-function addDailyCount(n){
-    var cur=getDailyCount();
-    var next=cur+(n||1);
-    localStorage.setItem('df_daily_count',String(next));
-    updateDailyBar();
-    return next;
-}
-function resetDailyCount(){localStorage.setItem('df_daily_count','0');updateDailyBar();}
-function updateDailyBar(){
-    var c=getDailyCount();
-    var pct=Math.min(100,Math.round((c/DAILY_LIMIT)*100));
-    document.getElementById('dailySent').textContent=c;
-    var fill=document.getElementById('dailyFill');
-    fill.style.width=pct+'%';
-    fill.style.background=pct>=90?'var(--danger)':pct>=60?'var(--warning)':'var(--accent-gradient)';
-    var rem=DAILY_LIMIT-c;
-    document.getElementById('dailyReset').textContent=(rem>0?rem+' remaining today — ':'⚠️ Daily limit reached — ')+'resets at midnight';
-}
-function canSendMore(){
-    return getDailyCount()<DAILY_LIMIT;
-}
-function remainingToday(){
-    return Math.max(0,DAILY_LIMIT-getDailyCount());
-}
-
-// Batch size helpers
-function setBatch(el,n){
-    document.querySelectorAll('#finderPage .btab').forEach(function(b){b.classList.remove('active');});
-    el.classList.add('active');
-    document.getElementById('finderBatch').value=n;
-    var label=n>=999999?'Sends all at once (careful with limits)':'Sends '+n+' at a time to stay within limits';
-    document.getElementById('batchNote').textContent=label;
-}
-function setImpBatch(el,n){
-    document.querySelectorAll('#importPage .btab').forEach(function(b){b.classList.remove('active');});
-    el.classList.add('active');
-    document.getElementById('impBatch').value=n;
-    var label=n>=999999?'Sends all at once':'Sends '+n+' at a time';
-    document.getElementById('impBatchNote').textContent=label;
-}
-
-// Init on page load
-updateDailyBar();
-
-// ===========================
-// IMPORT FILE LOGIC
-// ===========================
-var impData=[];// [{name,email,phone,status,err}]
-var rawHeaders=[];
-var rawRows=[];
-
-function dzDragOver(e){e.preventDefault();document.getElementById('dropzone').classList.add('dragover');}
-function dzDragLeave(){document.getElementById('dropzone').classList.remove('dragover');}
-function dzDrop(e){e.preventDefault();dzDragLeave();var f=e.dataTransfer.files[0];if(f)handleFile(f);}
+function dzOver(e){e.preventDefault();document.getElementById('dropzone').classList.add('dov');}
+function dzLeave(){document.getElementById('dropzone').classList.remove('dov');}
+function dzDrop(e){e.preventDefault();dzLeave();var f=e.dataTransfer.files[0];if(f)handleFile(f);}
 
 function handleFile(file){
-    if(!file)return;
-    var ext=file.name.split('.').pop().toLowerCase();
-    var reader=new FileReader();
-    reader.onload=function(e){
-        try{
-            var wb;
-            if(ext==='csv'){
-                wb=XLSX.read(e.target.result,{type:'string'});
-            }else{
-                wb=XLSX.read(e.target.result,{type:'binary'});
-            }
-            var ws=wb.Sheets[wb.SheetNames[0]];
-            var json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-            if(!json.length){alert('File is empty or unreadable.');return;}
-            rawHeaders=json[0].map(function(h){return String(h).trim();});
-            rawRows=json.slice(1).filter(function(r){return r.some(function(c){return String(c).trim();});});
-            buildColMap();
-            reRenderImport();
-        }catch(err){alert('Could not read file: '+err.message);}
-    };
-    if(ext==='csv')reader.readAsText(file);
-    else reader.readAsBinaryString(file);
-    // Update dropzone label
-    document.getElementById('dropzone').querySelector('.dz-title').textContent='✅ '+file.name+' loaded — map columns below';
-    document.getElementById('dropzone').style.borderColor='var(--success)';
+  if(!file)return;
+  var ext=file.name.split('.').pop().toLowerCase();
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var wb;
+      if(ext==='csv')wb=XLSX.read(ev.target.result,{type:'string'});
+      else wb=XLSX.read(ev.target.result,{type:'binary'});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(!json.length){alert('File is empty or unreadable.');return;}
+      rawHeaders=json[0].map(function(h){return String(h).trim();});
+      rawRows=json.slice(1).filter(function(r){return r.some(function(c){return String(c).trim();});});
+      buildColMap();
+      reRender();
+    }catch(err){alert('Could not read file: '+err.message);}
+  };
+  if(ext==='csv')reader.readAsText(file);else reader.readAsBinaryString(file);
+  document.getElementById('dropzone').querySelector('.dz-title').textContent='✅ '+file.name+' loaded';
+  document.getElementById('dropzone').style.borderColor='var(--ok)';
 }
 
 function buildColMap(){
-    document.getElementById('colMapRow').style.display='block';
-    var sels=['colName','colEmail','colPhone'];
-    var defaults={colName:['name','full name','contact name','business name'],colEmail:['email','e-mail','email address','mail'],colPhone:['phone','mobile','contact','number','tel']};
-    sels.forEach(function(id){
-        var sel=document.getElementById(id);
-        sel.innerHTML='<option value="-1">(none)</option>';
-        rawHeaders.forEach(function(h,i){
-            var o=document.createElement('option');
-            o.value=i;o.textContent=h;
-            sel.appendChild(o);
-        });
-        // Auto-detect
-        var defs=defaults[id]||[];
-        for(var i=0;i<rawHeaders.length;i++){
-            var hl=rawHeaders[i].toLowerCase();
-            if(defs.some(function(d){return hl.indexOf(d)!==-1;})){sel.value=i;break;}
-        }
-    });
+  document.getElementById('colMapRow').style.display='block';
+  var ids=['colName','colEmail','colPhone'];
+  var defs={colName:['name','full name','contact','business'],colEmail:['email','e-mail','mail'],colPhone:['phone','mobile','tel','number']};
+  ids.forEach(function(id){
+    var sel=document.getElementById(id);sel.innerHTML='<option value="-1">(none)</option>';
+    rawHeaders.forEach(function(h,i){var o=document.createElement('option');o.value=i;o.textContent=h;sel.appendChild(o);});
+    var dl=defs[id]||[];
+    for(var i=0;i<rawHeaders.length;i++){var hl=rawHeaders[i].toLowerCase();if(dl.some(function(d){return hl.indexOf(d)!==-1;})){sel.value=i;break;}}
+  });
 }
 
-function reRenderImport(){
-    var ni=+document.getElementById('colName').value;
-    var ei=+document.getElementById('colEmail').value;
-    var pi=+document.getElementById('colPhone').value;
-    impData=rawRows.map(function(row,idx){
-        return{
-            id:idx,
-            name:ni>=0?String(row[ni]||'').trim():'Contact '+(idx+1),
-            email:ei>=0?String(row[ei]||'').trim():'',
-            phone:pi>=0?String(row[pi]||'').trim():'',
-            status:'pending',err:'',checked:false
-        };
-    });
-    renderImpTable();
-    document.getElementById('impTableSection').style.display='block';
-    document.getElementById('impSendBar').style.display='block';
-    document.getElementById('impCount').textContent=impData.length;
-    updateSelCount();
+function reRender(){
+  var ni=+document.getElementById('colName').value;
+  var ei=+document.getElementById('colEmail').value;
+  var pi=+document.getElementById('colPhone').value;
+  impData=rawRows.map(function(row,idx){
+    return{id:idx,name:ni>=0?String(row[ni]||'').trim():'Contact '+(idx+1),email:ei>=0?String(row[ei]||'').trim():'',phone:pi>=0?String(row[pi]||'').trim():'',status:'pending',err:'',checked:false};
+  });
+  renderImpTable();
+  document.getElementById('impTableSection').style.display='block';
+  document.getElementById('impSendBar').style.display='block';
+  document.getElementById('impCount').textContent=impData.length;
+  updateSelCt();
 }
 
 function renderImpTable(){
-    var body=document.getElementById('impBody');
-    body.innerHTML='';
-    impData.forEach(function(c,i){
-        var tr=document.createElement('tr');
-        if(c.checked)tr.classList.add('row-checked');
-        if(c.status==='sent')tr.classList.add('imp-sent');
-        var badge='<span class="imp-badge ib-'+c.status+'">'+(c.status==='pending'?'Pending':c.status==='sending'?'Sending...':c.status==='sent'?'✅ Sent':'❌ '+(c.err||'Failed'))+'</span>';
-        tr.innerHTML=
-            '<td class="cb-cell"><input type="checkbox" class="cb row-cb" data-id="'+i+'" '+(c.checked?'checked':'')+' onchange="rowCheck(this,'+i+')"></td>'+
-            '<td style="color:var(--text-muted);font-size:.78rem">'+(i+1)+'</td>'+
-            '<td class="imp-name">'+esc(c.name||'—')+'</td>'+
-            '<td class="imp-email">'+esc(c.email||'—')+'</td>'+
-            '<td class="imp-phone">'+esc(c.phone||'—')+'</td>'+
-            '<td class="imp-status">'+badge+'</td>';
-        body.appendChild(tr);
-    });
+  var body=document.getElementById('impBody');body.innerHTML='';
+  impData.forEach(function(c,i){
+    var tr=document.createElement('tr');
+    if(c.checked)tr.classList.add('rck');
+    if(c.status==='sent')tr.classList.add('rsent');
+    var badge='<span class="ib '+(c.status==='pending'?'ib-p':c.status==='sending'?'ib-s':c.status==='sent'?'ib-ok':'ib-f')+'">'+(c.status==='pending'?'Pending':c.status==='sending'?'Sending...':c.status==='sent'?'✅ Sent':'❌ '+(c.err||'Failed'))+'</span>';
+    tr.innerHTML=
+      '<td class="cb-c"><input type="checkbox" class="cb" '+(c.checked?'checked':'')+' onchange="rowCk(this,'+i+')"></td>'+
+      '<td style="color:var(--t3);font-size:.76rem">'+(i+1)+'</td>'+
+      '<td class="imp-name">'+esc(c.name||'—')+'</td>'+
+      '<td class="imp-email">'+esc(c.email||'—')+'</td>'+
+      '<td class="imp-phone">'+esc(c.phone||'—')+'</td>'+
+      '<td>'+badge+'</td>';
+    body.appendChild(tr);
+  });
 }
 
-function rowCheck(cb,idx){
-    impData[idx].checked=cb.checked;
-    var tr=cb.closest('tr');
-    tr.classList.toggle('row-checked',cb.checked);
-    updateSelCount();
-}
-function toggleSelectAll(checked){
-    impData.forEach(function(c){c.checked=checked;});
-    document.getElementById('selectAll').checked=checked;
-    document.getElementById('selectAllHead').checked=checked;
-    renderImpTable();
-    updateSelCount();
-}
-function selectWithEmail(){
-    impData.forEach(function(c){c.checked=!!c.email;});
-    renderImpTable();
-    updateSelCount();
-}
-function clearSelection(){
-    impData.forEach(function(c){c.checked=false;});
-    document.getElementById('selectAll').checked=false;
-    document.getElementById('selectAllHead').checked=false;
-    renderImpTable();
-    updateSelCount();
-}
-function updateSelCount(){
-    var n=impData.filter(function(c){return c.checked;}).length;
-    document.getElementById('selCount').textContent=n;
-    document.getElementById('sendSelCount').textContent=n;
-}
+function rowCk(cb,idx){impData[idx].checked=cb.checked;cb.closest('tr').classList.toggle('rck',cb.checked);updateSelCt();}
+function toggleSelAll(v){impData.forEach(function(c){c.checked=v;});document.getElementById('selAll').checked=v;document.getElementById('selAllH').checked=v;renderImpTable();updateSelCt();}
+function selWithEmail(){impData.forEach(function(c){c.checked=!!c.email;});renderImpTable();updateSelCt();}
+function clearSel(){impData.forEach(function(c){c.checked=false;});document.getElementById('selAll').checked=false;document.getElementById('selAllH').checked=false;renderImpTable();updateSelCt();}
+function updateSelCt(){var n=impData.filter(function(c){return c.checked;}).length;document.getElementById('selCt').textContent=n;document.getElementById('sndCt').textContent=n;}
 
-// ===========================
-// SEND TO SELECTED / ALL
-// ===========================
-function sendToSelected(){
-    var sel=impData.filter(function(c){return c.checked&&c.email;});
-    if(!sel.length){alert('Please select contacts with email addresses first.');return;}
-    doImpSend(sel);
+function sendSelected(){
+  var sel=impData.filter(function(c){return c.checked&&c.email;});
+  if(!sel.length){alert('Please select contacts with email addresses.');return;}
+  doImpSend(sel);
 }
-function sendToAll(){
-    var all=impData.filter(function(c){return c.email;});
-    if(!all.length){alert('No email addresses found in your imported list.');return;}
-    // Check at least one row selected or confirm all
-    if(!confirm('Send to ALL '+all.length+' contacts with emails? Click OK to confirm.'))return;
-    doImpSend(all);
+function sendAll(){
+  var all=impData.filter(function(c){return c.email;});
+  if(!all.length){alert('No email addresses in list.');return;}
+  if(!confirm('Send to ALL '+all.length+' contacts with email? Click OK.'))return;
+  doImpSend(all);
 }
 
 async function doImpSend(contacts){
-    var key=localStorage.getItem('df_bkey')||'';
-    var sname=localStorage.getItem('df_sname')||'';
-    var semail=localStorage.getItem('df_semail')||'';
-    if(!key||!sname||!semail){
-        alert('Please set up your Brevo email first. Click the "Finder" tab and scroll to Email Sender Setup.');
-        return;
-    }
-    var msg=document.getElementById('impMsg').value.trim();
-    var subj=document.getElementById('impSubject').value.trim()||'Hello';
-    if(!msg){alert('Please type your message first.');return;}
+  var key=localStorage.getItem('df_bk')||'';
+  var sn=localStorage.getItem('df_sn')||'';
+  var se=localStorage.getItem('df_se')||'';
+  if(!key||!sn||!se){alert('Set up Email Sender in Finder tab first.');return;}
+  var msg=document.getElementById('impMsg').value.trim();
+  var subj=document.getElementById('impSubject').value.trim()||'Hello';
+  if(!msg){alert('Please type a message.');return;}
 
-    // Batch limit
-    var batchSize=parseInt(document.getElementById('impBatch').value,10)||50;
-    var rem=remainingToday();
-    if(rem<=0){alert('⚠️ Daily limit of 300 reached. Come back tomorrow or reset the counter.');return;}
-    var toSend=contacts.slice(0,Math.min(batchSize,rem));
-    if(toSend.length<contacts.length){
-        if(!confirm('You can send '+rem+' more emails today (limit: 300/day).\nThis batch will send to '+toSend.length+' contacts.\nProceed?'))return;
-    }
+  var batchSize=parseInt(document.getElementById('impBatch').value,10)||50;
+  var rem=remToday();
+  if(rem<=0){alert('⚠️ Daily limit of 300 reached. Resets at midnight.');return;}
+  var toSend=contacts.slice(0,Math.min(batchSize,rem));
+  if(toSend.length<contacts.length){
+    if(!confirm('You can send '+rem+' more today (300/day limit).\nThis batch: '+toSend.length+' contacts.\nProceed?'))return;
+  }
 
-    var btn=document.getElementById('impSendBtn');
-    btn.disabled=true;
-    document.getElementById('impProgWrap').style.display='block';
-    document.getElementById('impLog').innerHTML='';
+  var btn=document.getElementById('impSendBtn');btn.disabled=true;
+  document.getElementById('impProg').style.display='block';
+  document.getElementById('impLog').innerHTML='';
+  var total=toSend.length;var sent=0;var failed=0;
 
-    var total=toSend.length;
-    var sent=0;var failed=0;
+  for(var i=0;i<toSend.length;i++){
+    var c=toSend[i];
+    impData[c.id].status='sending';renderImpTable();
+    var p=msg.replace(/\{name\}/gi,c.name||'there');
+    var payload=JSON.stringify({sender:{name:sn,email:se},to:[{email:c.email,name:c.name||''}],subject:subj,textContent:p});
+    var ok=false;var errMsg='';
+    try{
+      var r=await xfetch('https://api.brevo.com/v3/smtp/email',{method:'POST',headers:{'Content-Type':'application/json','api-key':key},body:payload});
+      if(r.ok){ok=true;sent++;incDC(1);}
+      else{try{var ed=JSON.parse(r.text||'{}');errMsg=ed.message||ed.error||('Status '+r.status);}catch(pe){errMsg='Status '+r.status;}failed++;}
+    }catch(e){errMsg=e.message;failed++;}
+    impData[c.id].status=ok?'sent':'failed';impData[c.id].err=ok?'':errMsg;
+    renderImpTable();
+    var done=i+1;
+    document.getElementById('ipFill').style.width=Math.round(done/total*100)+'%';
+    document.getElementById('ipTxt').textContent='Sent '+done+'/'+total+' — ✅ '+sent+' ❌ '+failed+' — 📧 '+getDC()+'/300 today';
+    // Log entry
+    var li=document.createElement('div');li.className='il-item';
+    li.innerHTML=(ok?'✅':'❌')+' <span class="il-name">'+esc(c.name)+'</span><span class="il-email">'+esc(c.email)+'</span>'+(ok?'':\u2019<span style="color:var(--err)">'+esc(errMsg)+'</span>')+\u2019<span class="il-time">'+new Date().toLocaleTimeString()+'</span>';
+    document.getElementById('impLog').insertBefore(li,document.getElementById('impLog').firstChild);
+    if(i<toSend.length-1)await new Promise(function(resolve){setTimeout(resolve,300);});
+  }
 
-    for(var i=0;i<toSend.length;i++){
-        var c=toSend[i];
-        var idx=c.id;
-        impData[idx].status='sending';
-        renderImpTable();
-
-        var personalised=msg.replace(/\{name\}/gi,c.name||'there');
-        var payload=JSON.stringify({
-            sender:{name:sname,email:semail},
-            to:[{email:c.email,name:c.name||''}],
-            subject:subj,
-            textContent:personalised
-        });
-
-        var ok=false;var errMsg='';
-        try{
-            var r=await xfetch('https://api.brevo.com/v3/smtp/email',{
-                method:'POST',
-                headers:{'Content-Type':'application/json','api-key':key},
-                body:payload
-            });
-            if(r.ok){ok=true;sent++;addDailyCount(1);}
-            else{
-                try{var ed=JSON.parse(r.text||'{}');errMsg=ed.message||ed.error||('Status '+r.status);}catch(pe){errMsg='Status '+r.status;}
-                failed++;
-            }
-        }catch(e){errMsg=e.message;failed++;}
-
-        impData[idx].status=ok?'sent':'failed';
-        impData[idx].err=ok?'':errMsg;
-        renderImpTable();
-
-        // Update progress
-        var done=i+1;
-        document.getElementById('impProgFill').style.width=Math.round((done/total)*100)+'%';
-        document.getElementById('impProgTxt').textContent='Sent '+done+' of '+total+' — ✅ '+sent+' sent, ❌ '+failed+' failed — 📧 '+getDailyCount()+'/300 today';
-
-        // Add log entry
-        var li=document.createElement('div');
-        li.className='imp-log-item';
-        li.innerHTML=(ok?'✅':'❌')+' <span class="iln">'+esc(c.name)+'</span><span class="ile">'+esc(c.email)+'</span>'+(ok?'':'<span style="color:var(--danger);font-size:.7rem">'+esc(errMsg)+'</span>')+'<span class="ilt">'+new Date().toLocaleTimeString()+'</span>';
-        document.getElementById('impLog').insertBefore(li,document.getElementById('impLog').firstChild);
-
-        // Small delay to avoid rate limit
-    document.getElementById('impProgTxt').textContent='✅ Done! Sent: '+sent+', Failed: '+failed+' out of '+total+' contacts.';
-    btn.disabled=false;
+  var leftover=contacts.length-toSend.length;
+  document.getElementById('ipTxt').textContent='✅ Done! Sent: '+sent+', Failed: '+failed+(leftover>0?' | '+leftover+' contacts not sent (batch limit). Send again for next batch.':'');
+  btn.disabled=false;
 }
 
 function exportImpCSV(){
-    if(!impData.length)return;
-    var h=['#','Name','Email','Phone','Status'];
-    var rows=impData.map(function(c,i){
-        return[i+1,'"'+(c.name||'').replace(/"/g,'""')+'"',c.email||'',c.phone||'',c.status];
-    });
-    var csv='ɋ'+h.join(',')+'\n'+rows.map(function(r){return r.join(',');}).join('\n');
-    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');a.href=url;a.download='imported_contacts.csv';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  if(!impData.length)return;
+  var h=['#','Name','Email','Phone','Status'];
+  var rows=impData.map(function(c,i){return[i+1,'"'+(c.name||'').replace(/"/g,'""')+'"',c.email||'',c.phone||'',c.status];});
+  var csv='\uFEFF'+h.join(',')+'\n'+rows.map(function(r){return r.join(',');}).join('\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='contacts.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
 }
 </script>
 </body>
