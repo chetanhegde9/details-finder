@@ -1215,7 +1215,7 @@ async function doImpSend(contacts){
     document.getElementById('ipTxt').textContent='Sent '+done+'/'+total+' — ✅ '+sent+' ❌ '+failed+' — 📧 '+getDC()+'/300 today';
     // Log entry
     var li=document.createElement('div');li.className='il-item';
-    li.innerHTML=(ok?'✅':'❌')+' <span class="il-name">'+esc(c.name)+'</span><span class="il-email">'+esc(c.email)+'</span>'+(ok?'':\u2019<span style="color:var(--err)">'+esc(errMsg)+'</span>')+\u2019<span class="il-time">'+new Date().toLocaleTimeString()+'</span>';
+    li.innerHTML=(ok?'✅':'❌')+' <span class="il-name">'+esc(c.name)+'</span><span class="il-email">'+esc(c.email)+'</span>'+(ok?'':'<span style="color:var(--err)">'+esc(errMsg)+'</span>')+'<span class="il-time">'+new Date().toLocaleTimeString()+'</span>';
     document.getElementById('impLog').insertBefore(li,document.getElementById('impLog').firstChild);
     if(i<toSend.length-1)await new Promise(function(resolve){setTimeout(resolve,300);});
   }
