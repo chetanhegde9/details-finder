@@ -326,10 +326,11 @@
     </div>
 
     <!-- EMAIL SETUP -->
-    <div id="emailSetupSection" style="display:none" class="fade-in">
+    <!-- EMAIL SETUP - Always visible -->
+    <div id="emailSetupSection">
         <div class="card email-setup-card">
-            <h2><span class="ico">📧</span> Email Sender Setup</h2>
-            <p class="subtitle">Connect your email to send messages to all contacts — powered by Brevo (500 free emails/day)</p>
+            <h2><span class="ico">⚙️</span> Email Sender Setup</h2>
+            <p class="subtitle">Connect your Brevo account to send real emails to contacts — 300 free emails/day</p>
             <div class="setup-row">
                 <div class="setup-field">
                     <label class="lbl">Your Name (Sender Name)</label>
@@ -340,24 +341,31 @@
                     <input type="email" id="senderEmail" class="inp inp-sm" placeholder="e.g., you@gmail.com">
                 </div>
             </div>
-            <div class="setup-field" style="margin-bottom:12px">
-                <label class="lbl">Brevo API Key <a href="https://app.brevo.com" target="_blank" style="color:var(--email-color);font-weight:400;text-transform:none;letter-spacing:0">Get it free →</a></label>
+            <div class="setup-field" style="margin-bottom:14px">
+                <label class="lbl">Brevo API Key <a href="https://app.brevo.com" target="_blank" style="color:var(--email-color);font-weight:400;text-transform:none;letter-spacing:0">Get free key →</a></label>
                 <div class="key-row">
                     <input type="password" id="brevoKey" class="inp inp-sm" placeholder="xkeysib-...">
                     <button class="toggle-vis" onclick="toggleKey()">👁️</button>
-                    <button class="btn btn-sm" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff" onclick="saveEmailSetup()">Save</button>
+                    <button class="btn btn-sm" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff" onclick="saveEmailSetup()">💾 Save</button>
                 </div>
             </div>
+
+            <!-- TEST EMAIL BOX -->
+            <div style="background:var(--bg-primary);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:16px;margin-bottom:14px">
+                <label class="lbl" style="margin-bottom:10px">🧪 Test Your Setup — Send a Test Email</label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+                    <input type="email" id="testToEmail" class="inp inp-sm" style="flex:1;min-width:200px" placeholder="Enter any email to test (e.g., your own)">
+                    <button id="testEmailBtn" class="btn btn-sm" style="background:linear-gradient(135deg,#38bdf8,#0284c7);color:#fff;white-space:nowrap" onclick="testBrevoEmail()">📨 Send Test</button>
+                </div>
+                <div id="testEmailResult" style="margin-top:10px"></div>
+            </div>
+
             <div class="setup-note">
-                📋 <strong>How to get Brevo API key:</strong> Go to <a href="https://app.brevo.com" target="_blank">app.brevo.com</a> → Sign up free → Settings → API Keys → Create API Key. Then verify your sender email in Brevo under <strong>Senders &amp; IP</strong>. Your key stays private in your browser only.
+                📋 <strong>Setup steps:</strong> 1) Go to <a href="https://app.brevo.com" target="_blank">app.brevo.com</a> → Sign up free. 2) Go to <strong>Settings → Senders &amp; IPs → Add Sender</strong> → verify your email. 3) Go to <strong>Settings → API Keys → Create Key</strong> → paste it above.
             </div>
-            <div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-                <div id="setupSaved" style="display:none">
-                    <span class="setup-saved">✅ Setup saved!</span>
-                </div>
-                <button id="testEmailBtn" class="btn btn-sm" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff" onclick="testBrevoEmail()">📨 Send Test Email to Myself</button>
+            <div id="setupSaved" style="display:none;margin-top:12px">
+                <span class="setup-saved">✅ Setup saved — ready to send!</span>
             </div>
-            <div id="testEmailResult" style="margin-top:10px"></div>
         </div>
     </div>
 
@@ -528,8 +536,11 @@ function xfetch(url,opts){
         x.open(opts.method||'GET',url,true);
         if(opts.headers)for(var k in opts.headers)x.setRequestHeader(k,opts.headers[k]);
         x.onload=function(){
-            if(x.status>=200&&x.status<300)res({ok:true,status:x.status,json:function(){return Promise.resolve(JSON.parse(x.responseText));}});
-            else res({ok:false,status:x.status,text:x.responseText});
+            if(x.status>=200&&x.status<300){
+                res({ok:true,status:x.status,text:x.responseText,json:function(){return Promise.resolve(JSON.parse(x.responseText));}});
+            }else{
+                res({ok:false,status:x.status,text:x.responseText});
+            }
         };
         x.onerror=function(){rej(new Error('Network error. Check internet.'));};
         x.timeout=90000;
@@ -866,19 +877,23 @@ async function sendBrevoEmail(entry,personalised){
     }catch(e){addLog(entry.name,'em',true,'Network error: '+e.message);}
 }
 
-// Test single email to yourself
+// Test single email to any address
 async function testBrevoEmail(){
     var key=document.getElementById('brevoKey').value.trim()||localStorage.getItem('df_bkey')||'';
     var sname=document.getElementById('senderName').value.trim()||localStorage.getItem('df_sname')||'';
     var semail=document.getElementById('senderEmail').value.trim()||localStorage.getItem('df_semail')||'';
-    if(!key||!sname||!semail){alert('Please fill in all fields first.');return;}
+    var toEmail=document.getElementById('testToEmail').value.trim();
+    if(!key){showTestResult('error','❌ Please enter your Brevo API Key above.');return;}
+    if(!sname||!semail){showTestResult('error','❌ Please enter your Name and Email above.');return;}
+    if(!toEmail){showTestResult('error','❌ Please enter a test email address to send to.');return;}
     var btn=document.getElementById('testEmailBtn');
-    btn.disabled=true;btn.textContent='Sending...';
+    btn.disabled=true;btn.textContent='⏳ Sending...';
+    showTestResult('loading','⏳ Sending test email to '+toEmail+'...');
     var payload=JSON.stringify({
         sender:{name:sname,email:semail},
-        to:[{email:semail,name:sname}],
+        to:[{email:toEmail,name:'Test'}],
         subject:'✅ Details Finder — Email Test',
-        textContent:'This is a test email from Details Finder.\n\nIf you received this, your Brevo email setup is working correctly!\n\nSender: '+sname+' <'+semail+'>'
+        textContent:'Hello!\n\nThis is a test email from Details Finder.\n\nIf you received this, your Brevo email setup is working correctly! ✅\n\nSender Name: '+sname+'\nSender Email: '+semail+'\n\n— Details Finder by Chetan Hegde'
     });
     try{
         var r=await xfetch('https://api.brevo.com/v3/smtp/email',{
@@ -887,24 +902,35 @@ async function testBrevoEmail(){
             body:payload
         });
         if(r.ok){
-            btn.textContent='✅ Test Sent!';
+            showTestResult('success','✅ Test email sent to '+toEmail+' — Check your inbox! (also check Spam folder)');
+            btn.textContent='✅ Sent!';
             btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)';
-            document.getElementById('testEmailResult').innerHTML='<span style="color:var(--success);font-size:.82rem;font-weight:600">✅ Test email sent to '+semail+'. Check your inbox!</span>';
         }else{
-            var errMsg='Error';
-            try{var ed=JSON.parse(r.text||'{}');errMsg=ed.message||ed.error||('Status '+r.status);}catch(pe){errMsg='Status '+r.status;}
+            var errMsg='Unknown error (Status '+r.status+')';
+            try{
+                var ed=JSON.parse(r.text||'{}');
+                errMsg=ed.message||ed.error||errMsg;
+            }catch(pe){}
+            var fix='';
+            if(r.status===401)fix=' → API key is wrong or expired. Create a new one at app.brevo.com.';
+            else if(errMsg.toLowerCase().indexOf('sender')!==-1)fix=' → Your sender email is NOT verified in Brevo. Go to Brevo → Settings → Senders & IPs → Add Sender → verify it.';
+            else if(errMsg.toLowerCase().indexOf('unauthorized')!==-1||errMsg.toLowerCase().indexOf('forbidden')!==-1)fix=' → API key does not have permission. Make sure you selected all permissions when creating it.';
+            showTestResult('error','❌ '+errMsg+(fix?'<br><strong>Fix:</strong>'+fix:''));
             btn.textContent='❌ Failed';
             btn.style.background='linear-gradient(135deg,#ef4444,#dc2626)';
-            var fix='';
-            if(errMsg.toLowerCase().indexOf('sender')!==-1||errMsg.toLowerCase().indexOf('authorized')!==-1)fix=' → Go to Brevo → Senders & IPs → verify your email.';
-            if(errMsg.toLowerCase().indexOf('key')!==-1||r.status===401)fix=' → Your API key is wrong or expired. Create a new one at app.brevo.com.';
-            document.getElementById('testEmailResult').innerHTML='<span style="color:var(--danger);font-size:.82rem;font-weight:600">❌ '+errMsg+fix+'</span>';
         }
     }catch(e){
-        btn.textContent='❌ Failed';
-        document.getElementById('testEmailResult').innerHTML='<span style="color:var(--danger);font-size:.82rem">❌ Network error: '+e.message+'</span>';
+        showTestResult('error','❌ Network error: '+e.message);
+        btn.textContent='❌ Error';
     }
-    setTimeout(function(){btn.disabled=false;btn.textContent='📨 Send Test Email to Myself';btn.style.background='';},5000);
+    setTimeout(function(){btn.disabled=false;btn.textContent='📨 Send Test';btn.style.background='linear-gradient(135deg,#38bdf8,#0284c7)';},5000);
+}
+function showTestResult(type,msg){
+    var el=document.getElementById('testEmailResult');
+    var colors={success:'var(--success)',error:'var(--danger)',loading:'var(--accent-1)'};
+    el.innerHTML='<div style="font-size:.82rem;font-weight:500;color:'+colors[type]+';padding:8px 12px;background:'+
+        (type==='success'?'rgba(34,197,94,.1)':type==='error'?'rgba(239,68,68,.1)':'rgba(251,146,60,.1)')+
+        ';border-radius:var(--radius-sm);border:1px solid '+(type==='success'?'rgba(34,197,94,.2)':type==='error'?'rgba(239,68,68,.2)':'rgba(251,146,60,.2)')+'">'+msg+'</div>';
 }
 
 // ===========================
