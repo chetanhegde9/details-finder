@@ -351,9 +351,13 @@
             <div class="setup-note">
                 📋 <strong>How to get Brevo API key:</strong> Go to <a href="https://app.brevo.com" target="_blank">app.brevo.com</a> → Sign up free → Settings → API Keys → Create API Key. Then verify your sender email in Brevo under <strong>Senders &amp; IP</strong>. Your key stays private in your browser only.
             </div>
-            <div id="setupSaved" style="display:none;margin-top:12px">
-                <span class="setup-saved">✅ Email setup saved — ready to send!</span>
+            <div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <div id="setupSaved" style="display:none">
+                    <span class="setup-saved">✅ Setup saved!</span>
+                </div>
+                <button id="testEmailBtn" class="btn btn-sm" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);color:#fff" onclick="testBrevoEmail()">📨 Send Test Email to Myself</button>
             </div>
+            <div id="testEmailResult" style="margin-top:10px"></div>
         </div>
     </div>
 
@@ -849,29 +853,79 @@ async function sendBrevoEmail(entry,personalised){
         });
         if(r.ok){
             for(var i=0;i<allR.length;i++){if(allR[i].name===entry.name){allR[i].sent.em=true;break;}}
-            addLog(entry.name,'em');
+            addLog(entry.name,'em',false,'Sent successfully');
         }else{
-            addLog(entry.name,'em',true);
+            // Parse real error from Brevo
+            var errMsg='Unknown error (status '+r.status+')';
+            try{
+                var errData=JSON.parse(r.text||'{}');
+                errMsg=errData.message||errData.error||errMsg;
+            }catch(pe){}
+            addLog(entry.name,'em',true,errMsg);
         }
-    }catch(e){addLog(entry.name,'em',true);}
+    }catch(e){addLog(entry.name,'em',true,'Network error: '+e.message);}
+}
+
+// Test single email to yourself
+async function testBrevoEmail(){
+    var key=document.getElementById('brevoKey').value.trim()||localStorage.getItem('df_bkey')||'';
+    var sname=document.getElementById('senderName').value.trim()||localStorage.getItem('df_sname')||'';
+    var semail=document.getElementById('senderEmail').value.trim()||localStorage.getItem('df_semail')||'';
+    if(!key||!sname||!semail){alert('Please fill in all fields first.');return;}
+    var btn=document.getElementById('testEmailBtn');
+    btn.disabled=true;btn.textContent='Sending...';
+    var payload=JSON.stringify({
+        sender:{name:sname,email:semail},
+        to:[{email:semail,name:sname}],
+        subject:'✅ Details Finder — Email Test',
+        textContent:'This is a test email from Details Finder.\n\nIf you received this, your Brevo email setup is working correctly!\n\nSender: '+sname+' <'+semail+'>'
+    });
+    try{
+        var r=await xfetch('https://api.brevo.com/v3/smtp/email',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','api-key':key},
+            body:payload
+        });
+        if(r.ok){
+            btn.textContent='✅ Test Sent!';
+            btn.style.background='linear-gradient(135deg,#22c55e,#16a34a)';
+            document.getElementById('testEmailResult').innerHTML='<span style="color:var(--success);font-size:.82rem;font-weight:600">✅ Test email sent to '+semail+'. Check your inbox!</span>';
+        }else{
+            var errMsg='Error';
+            try{var ed=JSON.parse(r.text||'{}');errMsg=ed.message||ed.error||('Status '+r.status);}catch(pe){errMsg='Status '+r.status;}
+            btn.textContent='❌ Failed';
+            btn.style.background='linear-gradient(135deg,#ef4444,#dc2626)';
+            var fix='';
+            if(errMsg.toLowerCase().indexOf('sender')!==-1||errMsg.toLowerCase().indexOf('authorized')!==-1)fix=' → Go to Brevo → Senders & IPs → verify your email.';
+            if(errMsg.toLowerCase().indexOf('key')!==-1||r.status===401)fix=' → Your API key is wrong or expired. Create a new one at app.brevo.com.';
+            document.getElementById('testEmailResult').innerHTML='<span style="color:var(--danger);font-size:.82rem;font-weight:600">❌ '+errMsg+fix+'</span>';
+        }
+    }catch(e){
+        btn.textContent='❌ Failed';
+        document.getElementById('testEmailResult').innerHTML='<span style="color:var(--danger);font-size:.82rem">❌ Network error: '+e.message+'</span>';
+    }
+    setTimeout(function(){btn.disabled=false;btn.textContent='📨 Send Test Email to Myself';btn.style.background='';},5000);
 }
 
 // ===========================
 // SEND LOG
 // ===========================
-function addLog(name,type,failed){
+function addLog(name,type,failed,detail){
     var now=new Date();
     var timeStr=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')+':'+now.getSeconds().toString().padStart(2,'0');
-    sentLog.push({name:name,type:type,time:timeStr,failed:!!failed});
+    sentLog.push({name:name,type:type,time:timeStr,failed:!!failed,detail:detail||''});
     var list=document.getElementById('logList');
     document.getElementById('logSection').style.display='block';
     var item=document.createElement('div');
     item.className='log-item';
+    item.style.flexDirection='column';
+    item.style.alignItems='flex-start';
     var typeLabel=type==='wa'?'💬 WhatsApp':'📧 Email';
     var typeClass=type==='wa'?'li-wa':'li-em';
     var tick=failed?'❌':'✅';
-    item.innerHTML='<span class="li-tick">'+tick+'</span><span class="li-name">'+esc(name)+'</span><span class="li-type '+typeClass+'">'+typeLabel+'</span><span class="li-time">'+timeStr+'</span>';
-    list.insertBefore(item,list.firstChild);// newest first
+    var detailHtml=detail?'<div style="font-size:.72rem;color:'+(failed?'var(--danger)':'var(--success)')+';margin-top:3px;padding-left:24px">'+esc(detail)+'</div>':'';
+    item.innerHTML='<div style="display:flex;align-items:center;gap:10px;width:100%"><span class="li-tick">'+tick+'</span><span class="li-name">'+esc(name)+'</span><span class="li-type '+typeClass+'">'+typeLabel+'</span><span class="li-time">'+timeStr+'</span></div>'+detailHtml;
+    list.insertBefore(item,list.firstChild);
 }
 
 // ===========================
