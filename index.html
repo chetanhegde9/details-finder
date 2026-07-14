@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- SheetJS for Excel parsing -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         :root{
@@ -238,7 +240,70 @@
         footer span{color:var(--accent-1);font-weight:600}
         .fade-in{animation:fadeIn .5s ease forwards;opacity:0}
         @keyframes fadeIn{to{opacity:1}}
-        @media(max-width:768px){.search-row,.setup-row,.mc-row{flex-direction:column}.rh{flex-direction:column;align-items:flex-start}.fab-panel{right:12px;bottom:140px;width:calc(100vw - 24px)}.fab-search{right:16px;bottom:80px}.scroll-top{right:16px;bottom:16px}}
+
+        /* NAV BAR */
+        .top-nav{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:28px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:6px;}
+        .nav-btn{flex:1;max-width:220px;padding:10px 20px;border:none;border-radius:var(--radius-md);font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;cursor:pointer;transition:var(--transition);color:var(--text-secondary);background:transparent;display:flex;align-items:center;justify-content:center;gap:8px}
+        .nav-btn:hover{color:var(--text-primary);background:var(--bg-card-hover)}
+        .nav-btn.active{background:var(--accent-gradient);color:#fff;box-shadow:var(--shadow-glow)}
+
+        /* IMPORT PAGE */
+        .dropzone{border:2px dashed var(--border-accent);border-radius:var(--radius-lg);padding:48px 24px;text-align:center;cursor:pointer;transition:var(--transition);background:var(--bg-primary);margin-bottom:20px}
+        .dropzone:hover,.dropzone.dragover{border-color:var(--accent-1);background:rgba(251,146,60,.05)}
+        .dropzone .dz-icon{font-size:3rem;margin-bottom:12px;display:block}
+        .dropzone .dz-title{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+        .dropzone .dz-sub{font-size:.82rem;color:var(--text-muted)}
+        .dz-formats{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+        .dz-fmt{padding:4px 12px;border-radius:100px;font-size:.72rem;font-weight:600;background:rgba(251,146,60,.1);color:var(--accent-1);border:1px solid rgba(251,146,60,.2)}
+        .imp-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+        .imp-toolbar .it-left{display:flex;align-items:center;gap:10px;flex:1}
+        .imp-toolbar .it-right{display:flex;gap:8px;flex-wrap:wrap}
+        .sel-count{font-size:.82rem;color:var(--text-secondary);font-weight:500}
+        .sel-count span{color:var(--accent-1);font-weight:700}
+        /* Import table */
+        .imp-tw{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-md);margin-bottom:20px}
+        .imp-tw-scroll{overflow-x:auto}
+        .imp-table{width:100%;border-collapse:collapse;min-width:600px}
+        .imp-table thead th{background:var(--bg-secondary);padding:12px 14px;text-align:left;font-size:.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border-subtle)}
+        .imp-table tbody tr{border-bottom:1px solid var(--border-subtle);transition:var(--transition)}
+        .imp-table tbody tr:last-child{border-bottom:none}
+        .imp-table tbody tr:hover{background:var(--bg-card-hover)}
+        .imp-table tbody tr.row-checked{background:rgba(251,146,60,.05)}
+        .imp-table tbody tr.imp-sent{background:rgba(34,197,94,.04)}
+        .imp-table tbody td{padding:11px 14px;font-size:.84rem;vertical-align:middle}
+        .cb-cell{width:40px;text-align:center}
+        .cb{width:16px;height:16px;cursor:pointer;accent-color:var(--accent-1)}
+        .imp-name{font-weight:600}
+        .imp-email{color:var(--email-color);font-size:.82rem}
+        .imp-phone{color:var(--phone-color);font-size:.82rem}
+        .imp-status{font-size:.75rem}
+        .imp-badge{display:inline-flex;padding:3px 10px;border-radius:100px;font-size:.7rem;font-weight:600}
+        .ib-pending{background:rgba(100,116,139,.12);color:var(--text-muted)}
+        .ib-sending{background:rgba(251,146,60,.12);color:var(--accent-1)}
+        .ib-sent{background:rgba(34,197,94,.12);color:var(--success)}
+        .ib-fail{background:rgba(239,68,68,.12);color:var(--danger)}
+        .imp-send-bar{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px}
+        .imp-send-bar h3{font-size:1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+        .imp-msg-area{width:100%;min-height:110px;padding:12px 14px;background:var(--bg-primary);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:.88rem;line-height:1.6;outline:none;resize:vertical;transition:var(--transition);margin-bottom:12px}
+        .imp-msg-area:focus{border-color:var(--email-color);box-shadow:0 0 0 3px rgba(167,139,250,.1)}
+        .imp-msg-area::placeholder{color:var(--text-muted)}
+        .imp-send-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+        .imp-prog-wrap{margin-top:16px;display:none}
+        .imp-prog-bar{width:100%;height:8px;background:var(--bg-primary);border-radius:100px;overflow:hidden;margin-bottom:8px}
+        .imp-prog-fill{height:100%;background:var(--accent-gradient);border-radius:100px;transition:width .3s ease;width:0%}
+        .imp-prog-txt{font-size:.82rem;color:var(--text-secondary)}
+        .imp-log{margin-top:16px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
+        .imp-log-item{display:flex;align-items:flex-start;gap:8px;padding:7px 10px;background:var(--bg-primary);border-radius:var(--radius-sm);font-size:.78rem}
+        .imp-log-item .iln{font-weight:600;flex:1}
+        .imp-log-item .ile{color:var(--email-color);font-size:.72rem}
+        .imp-log-item .ilt{color:var(--text-muted);font-size:.72rem}
+        .col-map{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;padding:14px;background:var(--bg-primary);border-radius:var(--radius-md);border:1px solid var(--border-subtle)}
+        .col-map-field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
+        .col-map-field label{font-size:.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px}
+        .col-map-sel{padding:7px 10px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);color:var(--text-primary);font-family:'Inter',sans-serif;font-size:.82rem;outline:none;cursor:pointer}
+        .col-map-sel:focus{border-color:var(--accent-1)}
+
+        @media(max-width:768px){.search-row,.setup-row,.mc-row{flex-direction:column}.rh{flex-direction:column;align-items:flex-start}.fab-panel{right:12px;bottom:140px;width:calc(100vw - 24px)}.fab-search{right:16px;bottom:80px}.scroll-top{right:16px;bottom:16px}.top-nav{flex-direction:column}.nav-btn{max-width:100%;width:100%}}
     </style>
 </head>
 <body>
@@ -251,7 +316,34 @@
         <p class="made-by">Made by <span>Chetan Hegde</span></p>
     </header>
 
-    <!-- SEARCH -->
+        <!-- TOP NAV -->
+    <nav class="top-nav">
+        <button class="nav-btn active" id="navFinder" onclick="showPage('finder')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Finder
+        </button>
+        <button class="nav-btn" id="navImport" onclick="showPage('import')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import &amp; Send
+        </button>
+    </nav>
+
+    <!-- DAILY COUNTER (shared, always visible) -->
+    <div class="daily-bar" id="dailyBar">
+        <span style="font-size:1.4rem">📧</span>
+        <div class="daily-info">
+            <span class="daily-label">Brevo Emails Sent Today</span>
+            <span class="daily-nums"><span id="dailySent">0</span> / 300</span>
+        </div>
+        <div class="daily-track">
+            <div class="daily-pbar"><div class="daily-pfill" id="dailyFill" style="width:0%"></div></div>
+            <div class="daily-reset" id="dailyReset">Resets at midnight</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="resetDailyCount()" title="Reset counter">↺ Reset</button>
+    </div>
+
+    <!-- FINDER PAGE -->
+    <div id="finderPage">
     <section class="card" id="searchCard">
         <h2><span class="ico">🔍</span> Search</h2>
         <p class="subtitle">Enter a location and category to find business contact details worldwide</p>
@@ -392,6 +484,18 @@
             </div>
 
             <div class="camp-btns">
+                <!-- Batch size selector -->
+                <div class="batch-row" style="width:100%">
+                    <label>📦 Send in batches of:</label>
+                    <div class="batch-tabs">
+                        <span class="btab" onclick="setBatch(this,10)">10</span>
+                        <span class="btab active" onclick="setBatch(this,50)">50</span>
+                        <span class="btab" onclick="setBatch(this,100)">100</span>
+                        <span class="btab" onclick="setBatch(this,999999)">All</span>
+                    </div>
+                    <span id="batchNote" style="font-size:.75rem;color:var(--text-muted)">Sends 50 at a time to stay within limits</span>
+                </div>
+                <input type="hidden" id="finderBatch" value="50">
                 <button class="btn btn-wa" id="btnWa" onclick="sendAllWA()">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.963 7.963 0 01-4.113-1.14l-.287-.172-2.6.772.772-2.6-.172-.287A7.963 7.963 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/></svg>
                     Send via WhatsApp
@@ -411,7 +515,132 @@
     </div>
 
     <footer>Made with ❤️ by <span>Chetan Hegde</span></footer>
-</div>
+    </div><!-- end finderPage -->
+
+    <!-- IMPORT PAGE -->
+    <div id="importPage" style="display:none">
+
+        <!-- FILE UPLOAD -->
+        <div class="card" style="margin-bottom:20px">
+            <h2><span class="ico">📂</span> Import Contact List</h2>
+            <p class="subtitle">Upload an Excel (.xlsx) or CSV file with your contacts — emails, names, phone numbers</p>
+
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()" ondragover="dzDragOver(event)" ondragleave="dzDragLeave()" ondrop="dzDrop(event)">
+                <span class="dz-icon">📄</span>
+                <div class="dz-title">Click to upload or drag &amp; drop your file here</div>
+                <div class="dz-sub">Your file stays private — processed only in your browser</div>
+                <div class="dz-formats">
+                    <span class="dz-fmt">.xlsx (Excel)</span>
+                    <span class="dz-fmt">.xls (Excel 97)</span>
+                    <span class="dz-fmt">.csv</span>
+                    <span class="dz-fmt">.ods</span>
+                </div>
+            </div>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.ods" style="display:none" onchange="handleFile(this.files[0])">
+
+            <!-- Column Mapping -->
+            <div id="colMapRow" style="display:none">
+                <label class="lbl" style="margin-bottom:8px">🗂️ Map your columns</label>
+                <div class="col-map">
+                    <div class="col-map-field">
+                        <label>Name Column</label>
+                        <select id="colName" class="col-map-sel" onchange="reRenderImport()"></select>
+                    </div>
+                    <div class="col-map-field">
+                        <label>Email Column</label>
+                        <select id="colEmail" class="col-map-sel" onchange="reRenderImport()"></select>
+                    </div>
+                    <div class="col-map-field">
+                        <label>Phone Column (optional)</label>
+                        <select id="colPhone" class="col-map-sel" onchange="reRenderImport()"></select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTACTS TABLE -->
+        <div id="impTableSection" style="display:none">
+            <div class="rh">
+                <h2>Contacts <span class="count" id="impCount">0</span></h2>
+                <div class="ra">
+                    <button class="btn btn-secondary btn-sm" onclick="exportImpCSV()">📥 Export CSV</button>
+                </div>
+            </div>
+
+            <div class="imp-toolbar">
+                <div class="it-left">
+                    <input type="checkbox" id="selectAll" class="cb" onchange="toggleSelectAll(this.checked)" title="Select All">
+                    <label for="selectAll" style="font-size:.82rem;color:var(--text-secondary);cursor:pointer">Select All</label>
+                    <span class="sel-count">(<span id="selCount">0</span> selected)</span>
+                </div>
+                <div class="it-right">
+                    <button class="btn btn-secondary btn-sm" onclick="selectWithEmail()">📧 Select with Email</button>
+                    <button class="btn btn-secondary btn-sm" onclick="clearSelection()">✕ Clear</button>
+                </div>
+            </div>
+
+            <div class="imp-tw"><div class="imp-tw-scroll">
+            <table class="imp-table">
+                <thead><tr>
+                    <th class="cb-cell"><input type="checkbox" id="selectAllHead" class="cb" onchange="toggleSelectAll(this.checked)"></th>
+                    <th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Status</th>
+                </tr></thead>
+                <tbody id="impBody"></tbody>
+            </table>
+            </div></div>
+        </div>
+
+        <!-- SEND PANEL -->
+        <div class="imp-send-bar" id="impSendBar" style="display:none">
+            <h3>📤 Send Email to Selected Contacts</h3>
+            <div style="margin-bottom:12px">
+                <label class="lbl">Email Subject</label>
+                <input type="text" id="impSubject" class="inp inp-sm" placeholder="e.g., Special Offer For You!" style="margin-bottom:10px">
+                <label class="lbl">Your Message <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">— use {name} for personalization</span></label>
+                <textarea id="impMsg" class="imp-msg-area" placeholder="Hi {name},
+
+We have an exciting offer for you this week!
+
+Best regards,
+Chetan Hegde"></textarea>
+            </div>
+            <div class="imp-send-actions">
+                <div class="batch-row" style="width:100%;margin-bottom:10px">
+                    <label>📦 Send in batches of:</label>
+                    <div class="batch-tabs">
+                        <span class="btab" onclick="setImpBatch(this,10)">10</span>
+                        <span class="btab active" onclick="setImpBatch(this,50)">50</span>
+                        <span class="btab" onclick="setImpBatch(this,100)">100</span>
+                        <span class="btab" onclick="setImpBatch(this,999999)">All</span>
+                    </div>
+                    <span id="impBatchNote" style="font-size:.75rem;color:var(--text-muted)">Sends 50 at a time</span>
+                </div>
+                <input type="hidden" id="impBatch" value="50">
+                <button class="btn btn-email" id="impSendBtn" onclick="sendToSelected()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    Send to Selected (<span id="sendSelCount">0</span>)
+                </button>
+                <button class="btn btn-primary" onclick="sendToAll()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    Send to All with Email
+                </button>
+            </div>
+            <!-- PROGRESS -->
+            <div class="imp-prog-wrap" id="impProgWrap">
+                <div class="imp-prog-bar"><div class="imp-prog-fill" id="impProgFill"></div></div>
+                <div class="imp-prog-txt" id="impProgTxt">Sending...</div>
+                <div class="imp-log" id="impLog"></div>
+            </div>
+        </div>
+
+        <!-- Email setup reminder -->
+        <div class="card" style="border-color:rgba(167,139,250,.2);margin-bottom:20px">
+            <h2><span class="ico">⚙️</span> Email Setup (required for sending)</h2>
+            <p class="subtitle">Make sure your Brevo account is set up below — <a href="#" onclick="showPage('finder');setTimeout(function(){document.getElementById('emailSetupSection').scrollIntoView({behavior:'smooth'})},200);return false;" style="color:var(--email-color)">go to Email Setup →</a></p>
+        </div>
+
+        <footer>Made with ❤️ by <span>Chetan Hegde</span></footer>
+    </div><!-- end importPage -->
 
 <!-- SEND MODAL -->
 <div class="overlay" id="overlay" onclick="closeModal()"></div>
@@ -850,6 +1079,7 @@ async function sendBrevoEmail(entry,personalised){
     var sname=localStorage.getItem('df_sname')||'';
     var semail=localStorage.getItem('df_semail')||'';
     var subj=document.getElementById('emailSubj').value||'Hello';
+    if(!canSendMore()){addLog(entry.name,'em',true,'Daily limit of 300 reached. Resets at midnight.');return;}
     var payload=JSON.stringify({
         sender:{name:sname,email:semail},
         to:[{email:entry.email,name:entry.name}],
@@ -864,6 +1094,7 @@ async function sendBrevoEmail(entry,personalised){
         });
         if(r.ok){
             for(var i=0;i<allR.length;i++){if(allR[i].name===entry.name){allR[i].sent.em=true;break;}}
+            addDailyCount(1);
             addLog(entry.name,'em',false,'Sent successfully');
         }else{
             // Parse real error from Brevo
@@ -1011,6 +1242,308 @@ function esc(s){if(!s)return '';var d=document.createElement('div');d.textConten
 
 document.getElementById('areaInput').addEventListener('keydown',function(e){if(e.key==='Enter')startSearch();});
 document.getElementById('msgTxt').addEventListener('input',function(){document.getElementById('charCt').textContent=this.value.length;});
+
+// ===========================
+// PAGE SWITCHING
+// ===========================
+function showPage(page){
+    var isFinder=page==='finder';
+    document.getElementById('finderPage').style.display=isFinder?'block':'none';
+    document.getElementById('importPage').style.display=isFinder?'none':'block';
+    document.getElementById('navFinder').classList.toggle('active',isFinder);
+    document.getElementById('navImport').classList.toggle('active',!isFinder);
+    window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ===========================
+// DAILY EMAIL COUNTER
+// ===========================
+var DAILY_LIMIT=300;
+function getTodayKey(){return new Date().toISOString().slice(0,10);}
+function getDailyCount(){
+    var stored=localStorage.getItem('df_daily_date');
+    if(stored!==getTodayKey()){localStorage.setItem('df_daily_date',getTodayKey());localStorage.setItem('df_daily_count','0');return 0;}
+    return parseInt(localStorage.getItem('df_daily_count')||'0',10);
+}
+function addDailyCount(n){
+    var cur=getDailyCount();
+    var next=cur+(n||1);
+    localStorage.setItem('df_daily_count',String(next));
+    updateDailyBar();
+    return next;
+}
+function resetDailyCount(){localStorage.setItem('df_daily_count','0');updateDailyBar();}
+function updateDailyBar(){
+    var c=getDailyCount();
+    var pct=Math.min(100,Math.round((c/DAILY_LIMIT)*100));
+    document.getElementById('dailySent').textContent=c;
+    var fill=document.getElementById('dailyFill');
+    fill.style.width=pct+'%';
+    fill.style.background=pct>=90?'var(--danger)':pct>=60?'var(--warning)':'var(--accent-gradient)';
+    var rem=DAILY_LIMIT-c;
+    document.getElementById('dailyReset').textContent=(rem>0?rem+' remaining today — ':'⚠️ Daily limit reached — ')+'resets at midnight';
+}
+function canSendMore(){
+    return getDailyCount()<DAILY_LIMIT;
+}
+function remainingToday(){
+    return Math.max(0,DAILY_LIMIT-getDailyCount());
+}
+
+// Batch size helpers
+function setBatch(el,n){
+    document.querySelectorAll('#finderPage .btab').forEach(function(b){b.classList.remove('active');});
+    el.classList.add('active');
+    document.getElementById('finderBatch').value=n;
+    var label=n>=999999?'Sends all at once (careful with limits)':'Sends '+n+' at a time to stay within limits';
+    document.getElementById('batchNote').textContent=label;
+}
+function setImpBatch(el,n){
+    document.querySelectorAll('#importPage .btab').forEach(function(b){b.classList.remove('active');});
+    el.classList.add('active');
+    document.getElementById('impBatch').value=n;
+    var label=n>=999999?'Sends all at once':'Sends '+n+' at a time';
+    document.getElementById('impBatchNote').textContent=label;
+}
+
+// Init on page load
+updateDailyBar();
+
+// ===========================
+// IMPORT FILE LOGIC
+// ===========================
+var impData=[];// [{name,email,phone,status,err}]
+var rawHeaders=[];
+var rawRows=[];
+
+function dzDragOver(e){e.preventDefault();document.getElementById('dropzone').classList.add('dragover');}
+function dzDragLeave(){document.getElementById('dropzone').classList.remove('dragover');}
+function dzDrop(e){e.preventDefault();dzDragLeave();var f=e.dataTransfer.files[0];if(f)handleFile(f);}
+
+function handleFile(file){
+    if(!file)return;
+    var ext=file.name.split('.').pop().toLowerCase();
+    var reader=new FileReader();
+    reader.onload=function(e){
+        try{
+            var wb;
+            if(ext==='csv'){
+                wb=XLSX.read(e.target.result,{type:'string'});
+            }else{
+                wb=XLSX.read(e.target.result,{type:'binary'});
+            }
+            var ws=wb.Sheets[wb.SheetNames[0]];
+            var json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+            if(!json.length){alert('File is empty or unreadable.');return;}
+            rawHeaders=json[0].map(function(h){return String(h).trim();});
+            rawRows=json.slice(1).filter(function(r){return r.some(function(c){return String(c).trim();});});
+            buildColMap();
+            reRenderImport();
+        }catch(err){alert('Could not read file: '+err.message);}
+    };
+    if(ext==='csv')reader.readAsText(file);
+    else reader.readAsBinaryString(file);
+    // Update dropzone label
+    document.getElementById('dropzone').querySelector('.dz-title').textContent='✅ '+file.name+' loaded — map columns below';
+    document.getElementById('dropzone').style.borderColor='var(--success)';
+}
+
+function buildColMap(){
+    document.getElementById('colMapRow').style.display='block';
+    var sels=['colName','colEmail','colPhone'];
+    var defaults={colName:['name','full name','contact name','business name'],colEmail:['email','e-mail','email address','mail'],colPhone:['phone','mobile','contact','number','tel']};
+    sels.forEach(function(id){
+        var sel=document.getElementById(id);
+        sel.innerHTML='<option value="-1">(none)</option>';
+        rawHeaders.forEach(function(h,i){
+            var o=document.createElement('option');
+            o.value=i;o.textContent=h;
+            sel.appendChild(o);
+        });
+        // Auto-detect
+        var defs=defaults[id]||[];
+        for(var i=0;i<rawHeaders.length;i++){
+            var hl=rawHeaders[i].toLowerCase();
+            if(defs.some(function(d){return hl.indexOf(d)!==-1;})){sel.value=i;break;}
+        }
+    });
+}
+
+function reRenderImport(){
+    var ni=+document.getElementById('colName').value;
+    var ei=+document.getElementById('colEmail').value;
+    var pi=+document.getElementById('colPhone').value;
+    impData=rawRows.map(function(row,idx){
+        return{
+            id:idx,
+            name:ni>=0?String(row[ni]||'').trim():'Contact '+(idx+1),
+            email:ei>=0?String(row[ei]||'').trim():'',
+            phone:pi>=0?String(row[pi]||'').trim():'',
+            status:'pending',err:'',checked:false
+        };
+    });
+    renderImpTable();
+    document.getElementById('impTableSection').style.display='block';
+    document.getElementById('impSendBar').style.display='block';
+    document.getElementById('impCount').textContent=impData.length;
+    updateSelCount();
+}
+
+function renderImpTable(){
+    var body=document.getElementById('impBody');
+    body.innerHTML='';
+    impData.forEach(function(c,i){
+        var tr=document.createElement('tr');
+        if(c.checked)tr.classList.add('row-checked');
+        if(c.status==='sent')tr.classList.add('imp-sent');
+        var badge='<span class="imp-badge ib-'+c.status+'">'+(c.status==='pending'?'Pending':c.status==='sending'?'Sending...':c.status==='sent'?'✅ Sent':'❌ '+(c.err||'Failed'))+'</span>';
+        tr.innerHTML=
+            '<td class="cb-cell"><input type="checkbox" class="cb row-cb" data-id="'+i+'" '+(c.checked?'checked':'')+' onchange="rowCheck(this,'+i+')"></td>'+
+            '<td style="color:var(--text-muted);font-size:.78rem">'+(i+1)+'</td>'+
+            '<td class="imp-name">'+esc(c.name||'—')+'</td>'+
+            '<td class="imp-email">'+esc(c.email||'—')+'</td>'+
+            '<td class="imp-phone">'+esc(c.phone||'—')+'</td>'+
+            '<td class="imp-status">'+badge+'</td>';
+        body.appendChild(tr);
+    });
+}
+
+function rowCheck(cb,idx){
+    impData[idx].checked=cb.checked;
+    var tr=cb.closest('tr');
+    tr.classList.toggle('row-checked',cb.checked);
+    updateSelCount();
+}
+function toggleSelectAll(checked){
+    impData.forEach(function(c){c.checked=checked;});
+    document.getElementById('selectAll').checked=checked;
+    document.getElementById('selectAllHead').checked=checked;
+    renderImpTable();
+    updateSelCount();
+}
+function selectWithEmail(){
+    impData.forEach(function(c){c.checked=!!c.email;});
+    renderImpTable();
+    updateSelCount();
+}
+function clearSelection(){
+    impData.forEach(function(c){c.checked=false;});
+    document.getElementById('selectAll').checked=false;
+    document.getElementById('selectAllHead').checked=false;
+    renderImpTable();
+    updateSelCount();
+}
+function updateSelCount(){
+    var n=impData.filter(function(c){return c.checked;}).length;
+    document.getElementById('selCount').textContent=n;
+    document.getElementById('sendSelCount').textContent=n;
+}
+
+// ===========================
+// SEND TO SELECTED / ALL
+// ===========================
+function sendToSelected(){
+    var sel=impData.filter(function(c){return c.checked&&c.email;});
+    if(!sel.length){alert('Please select contacts with email addresses first.');return;}
+    doImpSend(sel);
+}
+function sendToAll(){
+    var all=impData.filter(function(c){return c.email;});
+    if(!all.length){alert('No email addresses found in your imported list.');return;}
+    // Check at least one row selected or confirm all
+    if(!confirm('Send to ALL '+all.length+' contacts with emails? Click OK to confirm.'))return;
+    doImpSend(all);
+}
+
+async function doImpSend(contacts){
+    var key=localStorage.getItem('df_bkey')||'';
+    var sname=localStorage.getItem('df_sname')||'';
+    var semail=localStorage.getItem('df_semail')||'';
+    if(!key||!sname||!semail){
+        alert('Please set up your Brevo email first. Click the "Finder" tab and scroll to Email Sender Setup.');
+        return;
+    }
+    var msg=document.getElementById('impMsg').value.trim();
+    var subj=document.getElementById('impSubject').value.trim()||'Hello';
+    if(!msg){alert('Please type your message first.');return;}
+
+    // Batch limit
+    var batchSize=parseInt(document.getElementById('impBatch').value,10)||50;
+    var rem=remainingToday();
+    if(rem<=0){alert('⚠️ Daily limit of 300 reached. Come back tomorrow or reset the counter.');return;}
+    var toSend=contacts.slice(0,Math.min(batchSize,rem));
+    if(toSend.length<contacts.length){
+        if(!confirm('You can send '+rem+' more emails today (limit: 300/day).\nThis batch will send to '+toSend.length+' contacts.\nProceed?'))return;
+    }
+
+    var btn=document.getElementById('impSendBtn');
+    btn.disabled=true;
+    document.getElementById('impProgWrap').style.display='block';
+    document.getElementById('impLog').innerHTML='';
+
+    var total=toSend.length;
+    var sent=0;var failed=0;
+
+    for(var i=0;i<toSend.length;i++){
+        var c=toSend[i];
+        var idx=c.id;
+        impData[idx].status='sending';
+        renderImpTable();
+
+        var personalised=msg.replace(/\{name\}/gi,c.name||'there');
+        var payload=JSON.stringify({
+            sender:{name:sname,email:semail},
+            to:[{email:c.email,name:c.name||''}],
+            subject:subj,
+            textContent:personalised
+        });
+
+        var ok=false;var errMsg='';
+        try{
+            var r=await xfetch('https://api.brevo.com/v3/smtp/email',{
+                method:'POST',
+                headers:{'Content-Type':'application/json','api-key':key},
+                body:payload
+            });
+            if(r.ok){ok=true;sent++;addDailyCount(1);}
+            else{
+                try{var ed=JSON.parse(r.text||'{}');errMsg=ed.message||ed.error||('Status '+r.status);}catch(pe){errMsg='Status '+r.status;}
+                failed++;
+            }
+        }catch(e){errMsg=e.message;failed++;}
+
+        impData[idx].status=ok?'sent':'failed';
+        impData[idx].err=ok?'':errMsg;
+        renderImpTable();
+
+        // Update progress
+        var done=i+1;
+        document.getElementById('impProgFill').style.width=Math.round((done/total)*100)+'%';
+        document.getElementById('impProgTxt').textContent='Sent '+done+' of '+total+' — ✅ '+sent+' sent, ❌ '+failed+' failed — 📧 '+getDailyCount()+'/300 today';
+
+        // Add log entry
+        var li=document.createElement('div');
+        li.className='imp-log-item';
+        li.innerHTML=(ok?'✅':'❌')+' <span class="iln">'+esc(c.name)+'</span><span class="ile">'+esc(c.email)+'</span>'+(ok?'':'<span style="color:var(--danger);font-size:.7rem">'+esc(errMsg)+'</span>')+'<span class="ilt">'+new Date().toLocaleTimeString()+'</span>';
+        document.getElementById('impLog').insertBefore(li,document.getElementById('impLog').firstChild);
+
+        // Small delay to avoid rate limit
+    document.getElementById('impProgTxt').textContent='✅ Done! Sent: '+sent+', Failed: '+failed+' out of '+total+' contacts.';
+    btn.disabled=false;
+}
+
+function exportImpCSV(){
+    if(!impData.length)return;
+    var h=['#','Name','Email','Phone','Status'];
+    var rows=impData.map(function(c,i){
+        return[i+1,'"'+(c.name||'').replace(/"/g,'""')+'"',c.email||'',c.phone||'',c.status];
+    });
+    var csv='ɋ'+h.join(',')+'\n'+rows.map(function(r){return r.join(',');}).join('\n');
+    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;a.download='imported_contacts.csv';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
 </script>
 </body>
 </html>
